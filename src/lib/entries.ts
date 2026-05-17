@@ -1,0 +1,80 @@
+import type { Entry, ImageRecord } from "./types";
+
+export async function fetchEntries(): Promise<Entry[]> {
+  const res = await fetch("/api/entries", { cache: "no-store", credentials: "include" });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const detail = typeof err.error === "string" ? err.error : `HTTP ${res.status}`;
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
+export async function createEntry(payload: {
+  title?: string;
+  createdAt?: string;
+  images: {
+    storagePath: string;
+    imageUrl: string;
+    position_x: number;
+    position_y: number;
+    rotation_degrees: number;
+    scale_factor: number;
+    width_px: number;
+    height_px: number;
+    z_index: number;
+  }[];
+}): Promise<Entry> {
+  const res = await fetch("/api/entries", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const step = err.step ? ` (${err.step})` : "";
+    throw new Error((err.error || "Failed to create entry") + step);
+  }
+  return res.json();
+}
+
+export async function deleteEntry(id: string): Promise<void> {
+  const res = await fetch(`/api/entries/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Failed to delete entry");
+}
+
+export function entryHeight(entry: Entry): number {
+  const collageH = entry.images.reduce(
+    (max, img) => Math.max(max, img.position_y + img.height_px),
+    280
+  );
+  return collageH + 120;
+}
+
+export function buildTimelineMarkers(
+  entries: Entry[],
+  entryOffsets: Map<string, number>
+): { year: number; month: number; label: string; entryId: string; y: number }[] {
+  const markers: { year: number; month: number; label: string; entryId: string; y: number }[] = [];
+  const seen = new Set<string>();
+
+  for (const entry of entries) {
+    const d = new Date(entry.created_at);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const y = entryOffsets.get(entry.id) ?? 0;
+    markers.push({
+      year: d.getFullYear(),
+      month: d.getMonth(),
+      label: d.toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+      entryId: entry.id,
+      y,
+    });
+  }
+
+  return markers;
+}
+
+export type { ImageRecord };

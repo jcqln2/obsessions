@@ -1,0 +1,278 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { EntryCard } from "./EntryCard";
+import { TimelineScrubber } from "./TimelineScrubber";
+import { CreateEntryModal } from "./CreateEntryModal";
+import { useTimelineStore } from "@/store/timeline";
+import { useKeyboardNav } from "@/hooks/useKeyboardNav";
+import { fetchEntries, deleteEntry, entryHeight, buildTimelineMarkers } from "@/lib/entries";
+import type { Entry } from "@/lib/types";
+import { createClient } from "@/lib/supabase/client";
+
+const ENTRY_GAP = 80;
+const PADDING_TOP = 100;
+
+export function TimelineView() {
+  const [entries, setEntries] = useState<Entry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [userId, setUserId] = useState<string>("");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [viewportHeight, setViewportHeight] = useState(800);
+
+  const { scale, scrollY, panX, panY, setScrollY, setPan, setIsPanning, zoomBy, resetView } =
+    useTimelineStore();
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const data = await fetchEntries();
+      setEntries(data);
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : "Failed to load entries");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setUserId(data.user.id);
+    });
+    load();
+  }, [load]);
+
+  useEffect(() => {
+    const update = () => setViewportHeight(window.innerHeight);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  const { offsets, totalHeight } = useMemo(() => {
+    const offsets = new Map<string, number>();
+    let y = PADDING_TOP;
+    for (const entry of entries) {
+      offsets.set(entry.id, y);
+      y += entryHeight(entry) + ENTRY_GAP;
+    }
+    return { offsets, totalHeight: y + PADDING_TOP };
+  }, [entries]);
+
+  const markers = useMemo(
+    () => buildTimelineMarkers(entries, offsets),
+    [entries, offsets]
+  );
+
+  useKeyboardNav(totalHeight, viewportHeight);
+
+  // Wheel scroll
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        zoomBy(e.deltaY > 0 ? -0.08 : 0.08);
+        return;
+      }
+      e.preventDefault();
+      const maxScroll = Math.max(0, totalHeight - viewportHeight);
+      setScrollY(Math.min(maxScroll, Math.max(0, scrollY + e.deltaY)));
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [scrollY, setScrollY, totalHeight, viewportHeight, zoomBy]);
+
+  // Space + drag pan
+  const spaceRef = useRef(false);
+  const dragRef = useRef<{ x: number; y: number; startPanX: number; startPanY: number } | null>(null);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space" && !(e.target instanceof HTMLInputElement)) {
+        e.preventDefault();
+        spaceRef.current = true;
+      }
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        spaceRef.current = false;
+        setIsPanning(false);
+        dragRef.current = null;
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+    };
+  }, [setIsPanning]);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (!spaceRef.current && e.button !== 1) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setIsPanning(true);
+    dragRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      startPanX: panX,
+      startPanY: panY,
+    };
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    const dx = e.clientX - dragRef.current.x;
+    const dy = e.clientY - dragRef.current.y;
+    setPan(dragRef.current.startPanX + dx, dragRef.current.startPanY + dy);
+  };
+
+  const onPointerUp = () => {
+    setIsPanning(false);
+    dragRef.current = null;
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Remove this entry from your archive?")) return;
+    await deleteEntry(id);
+    load();
+  };
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = "/login";
+  };
+
+  return (
+    <div className="relative h-screen w-full overflow-hidden bg-canvas">
+      <header className="fixed left-0 right-0 top-0 z-30 flex items-center justify-between px-6 py-4">
+        <h1 className="font-serif text-xl font-bold tracking-tight text-ink">
+          Obsessions
+        </h1>
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            className="font-sans text-sm text-ink underline-offset-4 hover:underline"
+          >
+            + New entry
+          </button>
+          <button
+            type="button"
+            onClick={resetView}
+            className="hidden font-mono text-xs text-muted hover:text-ink sm:block"
+            title="Reset zoom (R)"
+          >
+            {Math.round(scale * 100)}%
+          </button>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="font-sans text-xs text-muted hover:text-ink"
+          >
+            Sign out
+          </button>
+        </div>
+      </header>
+
+      <div
+        ref={containerRef}
+        className={`h-full w-full ${spaceRef.current ? "cursor-grab" : ""}`}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerLeave={onPointerUp}
+      >
+        <div
+          className="relative mx-auto origin-top transition-transform duration-300 ease-out"
+          style={{
+            transform: `translate(${panX}px, ${-scrollY + panY}px) scale(${scale})`,
+            width: "100%",
+            height: totalHeight,
+            willChange: "transform",
+          }}
+        >
+          {loading && (
+            <p className="absolute left-1/2 top-40 -translate-x-1/2 font-sans text-muted">
+              Loading your archive…
+            </p>
+          )}
+
+          {loadError && (
+            <div className="absolute left-1/2 top-40 w-full max-w-md -translate-x-1/2 px-6 text-center">
+              <p className="font-sans text-sm text-red-600">{loadError}</p>
+              <p className="mt-2 font-sans text-xs text-muted">
+                Run <code className="text-ink">001_schema.sql</code> and{" "}
+                <code className="text-ink">002_api_grants.sql</code> in Supabase SQL Editor,
+                then refresh.
+              </p>
+              <button
+                type="button"
+                onClick={load}
+                className="mt-4 font-sans text-sm text-ink underline"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+
+          {!loading && !loadError && entries.length === 0 && (
+            <div className="absolute left-1/2 top-40 w-full max-w-md -translate-x-1/2 px-6 text-center">
+              <p className="font-serif text-2xl text-ink">Your timeline is empty</p>
+              <p className="mt-2 font-sans text-sm text-muted">
+                Capture your first aesthetic era — upload a few screenshots and we&apos;ll
+                turn them into a collage.
+              </p>
+              <button
+                type="button"
+                onClick={() => setModalOpen(true)}
+                className="mt-6 bg-ink px-6 py-3 font-sans text-sm text-canvas"
+              >
+                Create first entry
+              </button>
+            </div>
+          )}
+
+          {entries.map((entry) => (
+            <EntryCard
+              key={entry.id}
+              entry={entry}
+              y={offsets.get(entry.id) ?? 0}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      </div>
+
+      <TimelineScrubber
+        markers={markers}
+        scrollY={scrollY}
+        totalHeight={totalHeight}
+        viewportHeight={viewportHeight}
+        onJump={setScrollY}
+      />
+
+      <footer className="fixed bottom-4 left-6 z-30 hidden font-mono text-[10px] text-muted/60 sm:block">
+        ↑↓ scroll · +/- zoom · Space+drag pan · R reset
+      </footer>
+
+      {userId && (
+        <CreateEntryModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          onCreated={load}
+          userId={userId}
+        />
+      )}
+    </div>
+  );
+}
