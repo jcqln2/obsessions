@@ -16,6 +16,20 @@ export function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+/** Screen-space offset to center `element` inside `container`. */
+export function centerOffset(
+  element: HTMLElement,
+  container: HTMLElement
+): { dx: number; dy: number } {
+  const c = container.getBoundingClientRect();
+  const r = element.getBoundingClientRect();
+  const viewCX = c.left + c.width / 2;
+  const viewCY = c.top + c.height / 2;
+  const elCX = r.left + r.width / 2;
+  const elCY = r.top + r.height / 2;
+  return { dx: viewCX - elCX, dy: viewCY - elCY };
+}
+
 export function clampPan(
   panX: number,
   panY: number,

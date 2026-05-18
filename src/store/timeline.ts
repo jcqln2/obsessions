@@ -16,9 +16,10 @@ interface TimelineState {
 
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 3;
+export const DEFAULT_ZOOM = 1.72;
 
 export const useTimelineStore = create<TimelineState>((set, get) => ({
-  scale: 1,
+  scale: DEFAULT_ZOOM,
   scrollY: 0,
   panX: 0,
   panY: 0,
@@ -33,5 +34,5 @@ export const useTimelineStore = create<TimelineState>((set, get) => ({
     const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale + delta));
     set({ scale: next });
   },
-  resetView: () => set({ scale: 1, panX: 0, panY: 0, scrollY: 0 }),
+  resetView: () => set({ scale: DEFAULT_ZOOM, panX: 0, panY: 0, scrollY: 0 }),
 }));

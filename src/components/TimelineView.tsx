@@ -4,12 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EntryCard } from "./EntryCard";
 import { TimelineScrubber } from "./TimelineScrubber";
 import { CreateEntryModal } from "./CreateEntryModal";
-import { useTimelineStore } from "@/store/timeline";
 import { useKeyboardNav } from "@/hooks/useKeyboardNav";
 import { fetchEntries, deleteEntry, entryHeight, buildTimelineMarkers } from "@/lib/entries";
 import type { Entry } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
-import { clampPan, getPanBounds } from "@/lib/timeline-viewport";
+import { centerOffset, clamp, clampPan, getPanBounds } from "@/lib/timeline-viewport";
+import { DEFAULT_ZOOM, useTimelineStore } from "@/store/timeline";
 
 const ENTRY_GAP = 80;
 const PADDING_TOP = 100;
@@ -23,6 +23,7 @@ export function TimelineView() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewportHeight, setViewportHeight] = useState(800);
   const [viewportWidth, setViewportWidth] = useState(1200);
+  const [skipTransition, setSkipTransition] = useState(false);
 
   const {
     scale,
@@ -32,6 +33,7 @@ export function TimelineView() {
     isPanning,
     setScrollY,
     setPan,
+    setScale,
     setIsPanning,
     zoomBy,
     resetView,
@@ -186,6 +188,7 @@ export function TimelineView() {
 
     const target = e.target as HTMLElement;
     if (target.closest("button, a, input, textarea")) return;
+    if (isLeftClick && target.closest("[data-collage-image]") && !spaceHeld) return;
 
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -210,6 +213,34 @@ export function TimelineView() {
     dragRef.current = null;
   };
 
+  const focusOnImage = useCallback(
+    (element: HTMLElement) => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      setSkipTransition(true);
+      setScale(DEFAULT_ZOOM);
+
+      const align = () => {
+        const { panX, scrollY } = useTimelineStore.getState();
+        const { dx, dy } = centerOffset(element, container);
+        const { maxPanX, maxScroll } = getPanBounds(
+          viewportWidth,
+          viewportHeight,
+          totalHeight,
+          DEFAULT_ZOOM
+        );
+
+        setPan(clamp(panX + dx, -maxPanX, maxPanX), 0);
+        setScrollY(clamp(scrollY - dy, 0, maxScroll));
+        setSkipTransition(false);
+      };
+
+      requestAnimationFrame(() => requestAnimationFrame(align));
+    },
+    [viewportWidth, viewportHeight, totalHeight, setScale, setPan, setScrollY]
+  );
+
   const handleDelete = async (id: string) => {
     if (!confirm("Remove this entry from your archive?")) return;
     await deleteEntry(id);
@@ -225,7 +256,7 @@ export function TimelineView() {
   return (
     <div className="relative h-screen w-full overflow-hidden bg-canvas">
       <header className="fixed left-0 right-0 top-0 z-30 flex items-center justify-between px-6 py-4">
-        <h1 className="font-serif text-xl font-bold tracking-tight text-ink">
+        <h1 className="font-serif text-lg font-medium tracking-tight text-ink">
           Obsessions
         </h1>
         <div className="flex items-center gap-4">
@@ -265,23 +296,23 @@ export function TimelineView() {
         onPointerLeave={onPointerUp}
       >
         <div
-          className={`relative mx-auto ${isPanning ? "" : "transition-transform duration-300 ease-out"}`}
+          className={`relative mx-auto ${isPanning || skipTransition ? "" : "transition-transform duration-300 ease-out"}`}
           style={{
             transform: `translate(${panX}px, ${-scrollY + panY}px) scale(${scale})`,
-            transformOrigin: "top center",
+            transformOrigin: "top right",
             width: "100%",
             height: totalHeight,
             willChange: "transform",
           }}
         >
           {loading && (
-            <p className="absolute left-1/2 top-40 -translate-x-1/2 font-sans text-muted">
+            <p className="absolute right-16 top-40 font-sans text-muted sm:right-24 lg:right-28">
               Loading your archive…
             </p>
           )}
 
           {loadError && (
-            <div className="absolute left-1/2 top-40 w-full max-w-md -translate-x-1/2 px-6 text-center">
+            <div className="absolute right-16 top-40 w-full max-w-md text-left sm:right-24 lg:right-28">
               <p className="font-sans text-sm text-red-600">{loadError}</p>
               <p className="mt-2 font-sans text-xs text-muted">
                 Run <code className="text-ink">001_schema.sql</code> and{" "}
@@ -299,8 +330,8 @@ export function TimelineView() {
           )}
 
           {!loading && !loadError && entries.length === 0 && (
-            <div className="absolute left-1/2 top-40 w-full max-w-md -translate-x-1/2 px-6 text-center">
-              <p className="font-serif text-2xl text-ink">Your timeline is empty</p>
+            <div className="absolute right-16 top-40 w-full max-w-md text-left sm:right-24 lg:right-28">
+              <p className="font-serif text-xl font-medium text-ink">Your timeline is empty</p>
               <p className="mt-2 font-sans text-sm text-muted">
                 Capture your first aesthetic era — upload a few screenshots and we&apos;ll
                 turn them into a collage.
@@ -321,6 +352,7 @@ export function TimelineView() {
               entry={entry}
               y={offsets.get(entry.id) ?? 0}
               onDelete={handleDelete}
+              onImageClick={(_image, element) => focusOnImage(element)}
             />
           ))}
         </div>
@@ -335,7 +367,7 @@ export function TimelineView() {
       />
 
       <footer className="fixed bottom-4 left-6 z-30 hidden font-mono text-[10px] text-muted/60 sm:block">
-        ↑↓ scroll · ←→ pan when zoomed · drag to pan · +/- zoom · R reset
+        ↑↓ scroll · click image to focus · drag to pan · +/- zoom · R reset
       </footer>
 
       {userId && (
