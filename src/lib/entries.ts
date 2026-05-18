@@ -44,12 +44,29 @@ export async function deleteEntry(id: string): Promise<void> {
   if (!res.ok) throw new Error("Failed to delete entry");
 }
 
+export async function updateEntry(
+  id: string,
+  payload: { title?: string | null }
+): Promise<Entry> {
+  const res = await fetch(`/api/entries/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to update entry");
+  }
+  return res.json();
+}
+
 export function entryHeight(entry: Entry): number {
   const collageH = entry.images.reduce(
     (max, img) => Math.max(max, img.position_y + img.height_px),
     280
   );
-  return collageH + 120;
+  return collageH + 140;
 }
 
 export function buildTimelineMarkers(

@@ -118,3 +118,14 @@ export function formatShortDate(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
+
+export function formatEntryTimestamp(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}

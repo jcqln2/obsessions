@@ -247,6 +247,10 @@ export function TimelineView() {
     load();
   };
 
+  const handleEntryUpdate = useCallback((updated: Entry) => {
+    setEntries((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+  }, []);
+
   const handleSignOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -256,7 +260,7 @@ export function TimelineView() {
   return (
     <div className="relative h-screen w-full overflow-hidden bg-canvas">
       <header className="fixed left-0 right-0 top-0 z-30 flex items-center justify-between px-6 py-4">
-        <h1 className="font-serif text-lg font-medium tracking-tight text-ink">
+        <h1 className="font-brand text-2xl font-normal tracking-wide text-ink">
           Obsessions
         </h1>
         <div className="flex items-center gap-4">
@@ -352,6 +356,7 @@ export function TimelineView() {
               entry={entry}
               y={offsets.get(entry.id) ?? 0}
               onDelete={handleDelete}
+              onUpdate={handleEntryUpdate}
               onImageClick={(_image, element) => focusOnImage(element)}
             />
           ))}

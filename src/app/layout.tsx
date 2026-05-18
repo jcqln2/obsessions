@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import { Cormorant_Garamond, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+
+const cuteNotes = localFont({
+  src: "../../public/fonts/cute-notes.ttf",
+  variable: "--font-brand",
+  display: "swap",
+});
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${cormorant.variable} ${mono.variable} font-sans antialiased`}
+        className={`${inter.variable} ${cormorant.variable} ${mono.variable} ${cuteNotes.variable} font-sans antialiased`}
       >
         {children}
       </body>

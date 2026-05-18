@@ -148,7 +148,7 @@ export function CreateEntryModal({
             exit={{ scale: 0.96, opacity: 0 }}
             transition={{ duration: 0.25 }}
           >
-            <h2 className="font-serif text-xl font-medium text-ink">New obsession</h2>
+            <h2 className="font-serif text-xl font-medium text-ink">Current obsession</h2>
             <p className="mt-1 font-sans text-sm text-muted">
               Drop 1–8 screenshots. We&apos;ll scatter them into a collage.
             </p>
