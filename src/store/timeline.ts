@@ -33,5 +33,5 @@ export const useTimelineStore = create<TimelineState>((set, get) => ({
     const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale + delta));
     set({ scale: next });
   },
-  resetView: () => set({ scale: 1, panX: 0, panY: 0 }),
+  resetView: () => set({ scale: 1, panX: 0, panY: 0, scrollY: 0 }),
 }));

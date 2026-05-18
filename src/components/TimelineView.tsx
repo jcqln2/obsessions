@@ -9,6 +9,7 @@ import { useKeyboardNav } from "@/hooks/useKeyboardNav";
 import { fetchEntries, deleteEntry, entryHeight, buildTimelineMarkers } from "@/lib/entries";
 import type { Entry } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
+import { clampPan, getPanBounds } from "@/lib/timeline-viewport";
 
 const ENTRY_GAP = 80;
 const PADDING_TOP = 100;
@@ -21,9 +22,20 @@ export function TimelineView() {
   const [userId, setUserId] = useState<string>("");
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewportHeight, setViewportHeight] = useState(800);
+  const [viewportWidth, setViewportWidth] = useState(1200);
 
-  const { scale, scrollY, panX, panY, setScrollY, setPan, setIsPanning, zoomBy, resetView } =
-    useTimelineStore();
+  const {
+    scale,
+    scrollY,
+    panX,
+    panY,
+    isPanning,
+    setScrollY,
+    setPan,
+    setIsPanning,
+    zoomBy,
+    resetView,
+  } = useTimelineStore();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -46,13 +58,6 @@ export function TimelineView() {
     load();
   }, [load]);
 
-  useEffect(() => {
-    const update = () => setViewportHeight(window.innerHeight);
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
-
   const { offsets, totalHeight } = useMemo(() => {
     const offsets = new Map<string, number>();
     let y = PADDING_TOP;
@@ -68,9 +73,38 @@ export function TimelineView() {
     [entries, offsets]
   );
 
+  const applyPan = useCallback(
+    (nextX: number, nextY: number) => {
+      const clamped = clampPan(
+        nextX,
+        nextY,
+        viewportWidth,
+        viewportHeight,
+        totalHeight,
+        scale
+      );
+      setPan(clamped.panX, clamped.panY);
+    },
+    [viewportWidth, viewportHeight, totalHeight, scale, setPan]
+  );
+
+  useEffect(() => {
+    const update = () => {
+      setViewportHeight(window.innerHeight);
+      setViewportWidth(window.innerWidth);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  useEffect(() => {
+    applyPan(panX, panY);
+  }, [scale, viewportWidth, viewportHeight, totalHeight]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useKeyboardNav(totalHeight, viewportHeight);
 
-  // Wheel scroll
+  // Wheel: vertical scroll + horizontal pan when zoomed
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -82,28 +116,55 @@ export function TimelineView() {
         return;
       }
       e.preventDefault();
-      const maxScroll = Math.max(0, totalHeight - viewportHeight);
-      setScrollY(Math.min(maxScroll, Math.max(0, scrollY + e.deltaY)));
+
+      const { maxScroll, maxPanX } = getPanBounds(
+        viewportWidth,
+        viewportHeight,
+        totalHeight,
+        scale
+      );
+
+      // Trackpad horizontal swipe, or Shift + scroll
+      const horizontalDelta = e.shiftKey ? e.deltaY : e.deltaX;
+      if (horizontalDelta !== 0 && (scale > 1 || e.shiftKey)) {
+        const nextX = panX - horizontalDelta;
+        applyPan(Math.max(-maxPanX, Math.min(maxPanX, nextX)), panY);
+      }
+
+      if (!e.shiftKey && e.deltaY !== 0) {
+        setScrollY(Math.min(maxScroll, Math.max(0, scrollY + e.deltaY)));
+      }
     };
 
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [scrollY, setScrollY, totalHeight, viewportHeight, zoomBy]);
+  }, [
+    scrollY,
+    panX,
+    panY,
+    scale,
+    setScrollY,
+    totalHeight,
+    viewportHeight,
+    viewportWidth,
+    zoomBy,
+    applyPan,
+  ]);
 
   // Space + drag pan
-  const spaceRef = useRef(false);
+  const [spaceHeld, setSpaceHeld] = useState(false);
   const dragRef = useRef<{ x: number; y: number; startPanX: number; startPanY: number } | null>(null);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space" && !(e.target instanceof HTMLInputElement)) {
         e.preventDefault();
-        spaceRef.current = true;
+        setSpaceHeld(true);
       }
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.code === "Space") {
-        spaceRef.current = false;
+        setSpaceHeld(false);
         setIsPanning(false);
         dragRef.current = null;
       }
@@ -116,8 +177,17 @@ export function TimelineView() {
     };
   }, [setIsPanning]);
 
+  const canPan = scale > 1 || spaceHeld;
+
   const onPointerDown = (e: React.PointerEvent) => {
-    if (!spaceRef.current && e.button !== 1) return;
+    const isMiddleClick = e.button === 1;
+    const isLeftClick = e.button === 0;
+    if (!isMiddleClick && !(isLeftClick && canPan)) return;
+
+    const target = e.target as HTMLElement;
+    if (target.closest("button, a, input, textarea")) return;
+
+    e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
     setIsPanning(true);
     dragRef.current = {
@@ -132,7 +202,7 @@ export function TimelineView() {
     if (!dragRef.current) return;
     const dx = e.clientX - dragRef.current.x;
     const dy = e.clientY - dragRef.current.y;
-    setPan(dragRef.current.startPanX + dx, dragRef.current.startPanY + dy);
+    applyPan(dragRef.current.startPanX + dx, dragRef.current.startPanY + dy);
   };
 
   const onPointerUp = () => {
@@ -186,16 +256,19 @@ export function TimelineView() {
 
       <div
         ref={containerRef}
-        className={`h-full w-full ${spaceRef.current ? "cursor-grab" : ""}`}
+        className={`h-full w-full touch-none ${
+          isPanning ? "cursor-grabbing" : canPan ? "cursor-grab" : ""
+        }`}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerLeave={onPointerUp}
       >
         <div
-          className="relative mx-auto origin-top transition-transform duration-300 ease-out"
+          className={`relative mx-auto ${isPanning ? "" : "transition-transform duration-300 ease-out"}`}
           style={{
             transform: `translate(${panX}px, ${-scrollY + panY}px) scale(${scale})`,
+            transformOrigin: "top center",
             width: "100%",
             height: totalHeight,
             willChange: "transform",
@@ -262,7 +335,7 @@ export function TimelineView() {
       />
 
       <footer className="fixed bottom-4 left-6 z-30 hidden font-mono text-[10px] text-muted/60 sm:block">
-        ↑↓ scroll · +/- zoom · Space+drag pan · R reset
+        ↑↓ scroll · ←→ pan when zoomed · drag to pan · +/- zoom · R reset
       </footer>
 
       {userId && (

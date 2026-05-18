@@ -7,7 +7,8 @@ export function useKeyboardNav(
   totalHeight: number,
   viewportHeight: number
 ) {
-  const { scrollY, setScrollY, zoomBy, resetView } = useTimelineStore();
+  const { scrollY, panX, panY, scale, setScrollY, setPan, zoomBy, resetView } =
+    useTimelineStore();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -19,10 +20,23 @@ export function useKeyboardNav(
       }
 
       const maxScroll = Math.max(0, totalHeight - viewportHeight);
+      const maxPanX = Math.max(0, (window.innerWidth * (scale - 1)) / 2 + 48);
       const small = 80;
       const large = viewportHeight * 0.85;
 
       switch (e.key) {
+        case "ArrowLeft":
+          if (scale > 1) {
+            e.preventDefault();
+            setPan(Math.max(-maxPanX, panX - small), panY);
+          }
+          break;
+        case "ArrowRight":
+          if (scale > 1) {
+            e.preventDefault();
+            setPan(Math.min(maxPanX, panX + small), panY);
+          }
+          break;
         case "ArrowUp":
           e.preventDefault();
           setScrollY(Math.max(0, scrollY - small));
@@ -71,5 +85,16 @@ export function useKeyboardNav(
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [scrollY, setScrollY, zoomBy, resetView, totalHeight, viewportHeight]);
+  }, [
+    scrollY,
+    panX,
+    panY,
+    scale,
+    setScrollY,
+    setPan,
+    zoomBy,
+    resetView,
+    totalHeight,
+    viewportHeight,
+  ]);
 }
