@@ -337,8 +337,7 @@ export function TimelineView() {
             <div className="absolute right-16 top-40 w-full max-w-md text-left sm:right-24 lg:right-28">
               <p className="font-serif text-xl font-medium text-ink">Your timeline is empty</p>
               <p className="mt-2 font-sans text-sm text-muted">
-                Capture your first aesthetic era — upload a few screenshots and we&apos;ll
-                turn them into a collage.
+              Drop a few screenshots of whatever you're obsessed with right now and we’ll make a collage.
               </p>
               <button
                 type="button"

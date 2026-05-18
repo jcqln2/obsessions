@@ -1,6 +1,6 @@
 # Obsessions
 
-A personal aesthetic archive — upload screenshot collections, auto-generate imperfect collages, and scroll through your taste over time.
+A personal obsession collage, time-capsule archive. upload photos of what you're into, have imperfect collages made, and scroll through your obsessions over time.
 
 ## Stack
 

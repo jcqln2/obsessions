@@ -67,7 +67,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <h1 className="font-brand text-3xl font-normal tracking-wide text-ink">Obsessions</h1>
         <p className="mt-2 font-sans text-sm text-muted">
-          Your private aesthetic archive
+          Your private obsession collage tool
         </p>
 
         <form onSubmit={handleSubmit} className="mt-10 space-y-4">
