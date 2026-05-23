@@ -3,20 +3,111 @@
 @tailwind utilities;
 
 :root {
-  --canvas: #f8f7f5;
+  /* Cool greige linen — light text on ink buttons */
+  --canvas: #eeedea;
+  --canvas-deep: #d5d3cc;
+  --canvas-highlight: #f6f6f4;
+  --canvas-shadow: #b8b6b0;
   --ink: #2a2a2a;
+}
+
+html {
+  height: 100%;
 }
 
 html,
 body {
-  height: 100%;
-  background: var(--canvas);
   color: var(--ink);
 }
 
 body {
+  min-height: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  position: relative;
+  isolation: isolate;
+  background-color: var(--canvas-deep);
+  background-image:
+    radial-gradient(
+      ellipse 130% 90% at 50% -10%,
+      var(--canvas-highlight) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 85% 65% at 100% 100%,
+      rgba(155, 158, 165, 0.14) 0%,
+      transparent 52%
+    ),
+    radial-gradient(
+      ellipse 75% 55% at 0% 95%,
+      rgba(148, 152, 160, 0.12) 0%,
+      transparent 48%
+    ),
+    repeating-linear-gradient(
+      93deg,
+      transparent 0,
+      transparent 2px,
+      rgba(88, 90, 98, 0.026) 2px,
+      rgba(88, 90, 98, 0.026) 3px
+    ),
+    repeating-linear-gradient(
+      3deg,
+      transparent 0,
+      transparent 2px,
+      rgba(82, 85, 92, 0.02) 2px,
+      rgba(82, 85, 92, 0.02) 3px
+    ),
+    repeating-linear-gradient(
+      88deg,
+      transparent 0,
+      transparent 11px,
+      rgba(252, 252, 251, 0.07) 11px,
+      rgba(252, 252, 251, 0.07) 12px
+    ),
+    linear-gradient(
+      168deg,
+      #f5f5f3 0%,
+      #ebeae6 28%,
+      #e3e2dd 55%,
+      #dbd9d3 78%,
+      #d3d1ca 100%
+    );
+  background-attachment: fixed;
+  background-size:
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    5px 5px,
+    7px 7px,
+    24px 24px,
+    100% 100%;
+}
+
+/* Fine paper grain */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+}
+
+/* Soft vignette */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 95% 88% at 50% 45%,
+    transparent 42%,
+    rgba(100, 105, 112, 0.08) 100%
+  );
 }
 
 * {
@@ -25,4 +116,58 @@ body {
 
 ::selection {
   background: rgba(42, 42, 42, 0.12);
+}
+
+@layer components {
+  .canvas-panel {
+    background-color: rgba(238, 237, 234, 0.92);
+    backdrop-filter: blur(8px);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.5) inset,
+      0 12px 40px rgba(70, 75, 85, 0.07);
+  }
+
+  .brand-wordmark {
+    font-family: var(--font-brand), var(--font-serif), Georgia, serif;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    color: #fafffe;
+    font-size: clamp(2.5rem, 4.5vw, 3.75rem);
+    line-height: 1;
+    text-shadow:
+      0 0 2px rgba(255, 255, 255, 1),
+      0 0 10px rgba(210, 255, 245, 0.95),
+      0 0 22px rgba(140, 240, 220, 0.8),
+      0 0 40px rgba(90, 215, 200, 0.55),
+      0 0 64px rgba(70, 190, 185, 0.35),
+      0 0 88px rgba(55, 165, 175, 0.2);
+    animation: brand-biolume 5s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes brand-biolume {
+  from {
+    text-shadow:
+      0 0 2px rgba(255, 255, 255, 1),
+      0 0 10px rgba(210, 255, 245, 0.9),
+      0 0 22px rgba(140, 240, 220, 0.75),
+      0 0 40px rgba(90, 215, 200, 0.5),
+      0 0 64px rgba(70, 190, 185, 0.3),
+      0 0 88px rgba(55, 165, 175, 0.18);
+  }
+  to {
+    text-shadow:
+      0 0 3px rgba(255, 255, 255, 1),
+      0 0 14px rgba(225, 255, 250, 1),
+      0 0 30px rgba(160, 255, 235, 0.9),
+      0 0 52px rgba(110, 230, 215, 0.65),
+      0 0 78px rgba(85, 205, 195, 0.45),
+      0 0 100px rgba(65, 180, 190, 0.28);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-wordmark {
+    animation: none;
+  }
 }

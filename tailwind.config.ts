@@ -9,10 +9,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        canvas: "#f8f7f5",
+        canvas: {
+          DEFAULT: "#eeedea",
+          deep: "#d5d3cc",
+          highlight: "#f6f6f4",
+          shadow: "#b8b6b0",
+        },
         ink: "#2a2a2a",
-        muted: "#999999",
-        timeline: "#333333",
+        muted: "#7c7a76",
+        timeline: "#3a3a38",
       },
       fontFamily: {
         brand: ["var(--font-brand)", "var(--font-serif)", "Georgia", "serif"],

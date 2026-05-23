@@ -1,3 +1,4 @@
+import { getCollageBounds } from "./collage";
 import type { Entry, ImageRecord } from "./types";
 
 export async function fetchEntries(): Promise<Entry[]> {
@@ -62,11 +63,25 @@ export async function updateEntry(
 }
 
 export function entryHeight(entry: Entry): number {
-  const collageH = entry.images.reduce(
-    (max, img) => Math.max(max, img.position_y + img.height_px),
-    280
-  );
-  return collageH + 140;
+  const headerBlock = 120;
+  const notesBlock = entry.notes ? 64 : 0;
+
+  if (!entry.images.length) {
+    return 280 + headerBlock + notesBlock;
+  }
+
+  const placements = entry.images.map((img) => ({
+    x: img.position_x,
+    y: img.position_y,
+    rotation: img.rotation_degrees,
+    scale: img.scale_factor,
+    width: img.width_px,
+    height: img.height_px,
+    zIndex: img.z_index,
+  }));
+
+  const { height: collageH } = getCollageBounds(placements);
+  return collageH + headerBlock + notesBlock;
 }
 
 export function buildTimelineMarkers(

@@ -1,5 +1,6 @@
 "use client";
 
+import { getPanBounds } from "@/lib/timeline-viewport";
 import type { TimelineMarker } from "@/lib/types";
 
 interface TimelineScrubberProps {
@@ -7,6 +8,8 @@ interface TimelineScrubberProps {
   scrollY: number;
   totalHeight: number;
   viewportHeight: number;
+  viewportWidth: number;
+  scale: number;
   onJump: (y: number) => void;
 }
 
@@ -15,12 +18,22 @@ export function TimelineScrubber({
   scrollY,
   totalHeight,
   viewportHeight,
+  viewportWidth,
+  scale,
   onJump,
 }: TimelineScrubberProps) {
   const trackHeight = Math.max(viewportHeight - 120, 200);
-  const maxScroll = Math.max(1, totalHeight - viewportHeight);
+  const { minScroll, maxScroll } = getPanBounds(
+    viewportWidth,
+    viewportHeight,
+    totalHeight,
+    scale
+  );
+  const scrollRange = maxScroll - minScroll;
   const thumbTop =
-    maxScroll > 0 ? (scrollY / maxScroll) * (trackHeight - 24) : 0;
+    scrollRange > 0
+      ? ((scrollY - minScroll) / scrollRange) * (trackHeight - 24)
+      : 0;
 
   const years = Array.from(new Set(markers.map((m) => m.year))).sort(
     (a, b) => b - a
@@ -39,7 +52,7 @@ export function TimelineScrubber({
           style={{ top: thumbTop }}
           role="slider"
           aria-valuenow={scrollY}
-          aria-valuemin={0}
+          aria-valuemin={minScroll}
           aria-valuemax={maxScroll}
         />
 

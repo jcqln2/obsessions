@@ -8,11 +8,23 @@ import { useKeyboardNav } from "@/hooks/useKeyboardNav";
 import { fetchEntries, deleteEntry, entryHeight, buildTimelineMarkers } from "@/lib/entries";
 import type { Entry } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
-import { centerOffset, clamp, clampPan, getPanBounds } from "@/lib/timeline-viewport";
-import { DEFAULT_ZOOM, useTimelineStore } from "@/store/timeline";
+import {
+  clampPan,
+  clampScroll,
+  computeFocusOnElement,
+  getPanBounds,
+  wheelZoomFactor,
+} from "@/lib/timeline-viewport";
+import {
+  DEFAULT_ZOOM,
+  formatZoomPercent,
+  type ZoomContext,
+  useTimelineStore,
+} from "@/store/timeline";
 
 const ENTRY_GAP = 80;
 const PADDING_TOP = 100;
+const PADDING_BOTTOM = 160;
 
 export function TimelineView() {
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -24,6 +36,8 @@ export function TimelineView() {
   const [viewportHeight, setViewportHeight] = useState(800);
   const [viewportWidth, setViewportWidth] = useState(1200);
   const [skipTransition, setSkipTransition] = useState(false);
+  const zoomTransitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pinchRef = useRef<{ distance: number } | null>(null);
 
   const {
     scale,
@@ -35,7 +49,9 @@ export function TimelineView() {
     setPan,
     setScale,
     setIsPanning,
-    zoomBy,
+    zoomByFactor,
+    zoomIn,
+    zoomOut,
     resetView,
   } = useTimelineStore();
 
@@ -67,13 +83,30 @@ export function TimelineView() {
       offsets.set(entry.id, y);
       y += entryHeight(entry) + ENTRY_GAP;
     }
-    return { offsets, totalHeight: y + PADDING_TOP };
+    return { offsets, totalHeight: y + PADDING_BOTTOM };
   }, [entries]);
 
   const markers = useMemo(
     () => buildTimelineMarkers(entries, offsets),
     [entries, offsets]
   );
+
+  const zoomContext = useCallback(
+    (anchorX: number, anchorY: number): ZoomContext => ({
+      anchorX,
+      anchorY,
+      viewportWidth,
+      viewportHeight,
+      totalHeight,
+    }),
+    [viewportWidth, viewportHeight, totalHeight]
+  );
+
+  const bumpZoomTransition = useCallback(() => {
+    setSkipTransition(true);
+    if (zoomTransitionRef.current) clearTimeout(zoomTransitionRef.current);
+    zoomTransitionRef.current = setTimeout(() => setSkipTransition(false), 120);
+  }, []);
 
   const applyPan = useCallback(
     (nextX: number, nextY: number) => {
@@ -104,7 +137,7 @@ export function TimelineView() {
     applyPan(panX, panY);
   }, [scale, viewportWidth, viewportHeight, totalHeight]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useKeyboardNav(totalHeight, viewportHeight);
+  useKeyboardNav(totalHeight, viewportHeight, viewportWidth);
 
   // Wheel: vertical scroll + horizontal pan when zoomed
   useEffect(() => {
@@ -114,12 +147,20 @@ export function TimelineView() {
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
-        zoomBy(e.deltaY > 0 ? -0.08 : 0.08);
+        const rect = el.getBoundingClientRect();
+        zoomByFactor(wheelZoomFactor(e.deltaY), {
+          anchorX: e.clientX - rect.left,
+          anchorY: e.clientY - rect.top,
+          viewportWidth,
+          viewportHeight,
+          totalHeight,
+        });
+        bumpZoomTransition();
         return;
       }
       e.preventDefault();
 
-      const { maxScroll, maxPanX } = getPanBounds(
+      const { maxPanX } = getPanBounds(
         viewportWidth,
         viewportHeight,
         totalHeight,
@@ -134,7 +175,15 @@ export function TimelineView() {
       }
 
       if (!e.shiftKey && e.deltaY !== 0) {
-        setScrollY(Math.min(maxScroll, Math.max(0, scrollY + e.deltaY)));
+        setScrollY(
+          clampScroll(
+            scrollY + e.deltaY,
+            viewportWidth,
+            viewportHeight,
+            totalHeight,
+            scale
+          )
+        );
       }
     };
 
@@ -149,8 +198,72 @@ export function TimelineView() {
     totalHeight,
     viewportHeight,
     viewportWidth,
-    zoomBy,
+    zoomByFactor,
     applyPan,
+    bumpZoomTransition,
+  ]);
+
+  // Pinch-to-zoom (trackpads / touch)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const touchDistance = (touches: TouchList) => {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.hypot(dx, dy);
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        pinchRef.current = { distance: touchDistance(e.touches) };
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 2 || !pinchRef.current) return;
+      e.preventDefault();
+      const dist = touchDistance(e.touches);
+      const factor = dist / pinchRef.current.distance;
+      if (Math.abs(factor - 1) < 0.002) return;
+
+      const rect = el.getBoundingClientRect();
+      const anchorX =
+        (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+      const anchorY =
+        (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+
+      zoomByFactor(factor, {
+        anchorX,
+        anchorY,
+        viewportWidth,
+        viewportHeight,
+        totalHeight,
+      });
+      pinchRef.current.distance = dist;
+      bumpZoomTransition();
+    };
+
+    const onTouchEnd = () => {
+      pinchRef.current = null;
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd);
+    el.addEventListener("touchcancel", onTouchEnd);
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, [
+    viewportWidth,
+    viewportHeight,
+    totalHeight,
+    zoomByFactor,
+    bumpZoomTransition,
   ]);
 
   // Space + drag pan
@@ -179,7 +292,7 @@ export function TimelineView() {
     };
   }, [setIsPanning]);
 
-  const canPan = scale > 1 || spaceHeld;
+  const canPan = scale > 1.02 || spaceHeld;
 
   const onPointerDown = (e: React.PointerEvent) => {
     const isMiddleClick = e.button === 1;
@@ -219,24 +332,42 @@ export function TimelineView() {
       if (!container) return;
 
       setSkipTransition(true);
-      setScale(DEFAULT_ZOOM);
 
-      const align = () => {
-        const { panX, scrollY } = useTimelineStore.getState();
-        const { dx, dy } = centerOffset(element, container);
-        const { maxPanX, maxScroll } = getPanBounds(
+      const { scale, panX, panY, scrollY } = useTimelineStore.getState();
+      const focused = computeFocusOnElement({
+        element,
+        container,
+        targetScale: DEFAULT_ZOOM,
+        currentScale: scale,
+        panX,
+        panY,
+        scrollY,
+        viewportWidth,
+        viewportHeight,
+      });
+
+      const { panX: nextPanX, panY: nextPanY } = clampPan(
+        focused.panX,
+        0,
+        viewportWidth,
+        viewportHeight,
+        totalHeight,
+        DEFAULT_ZOOM
+      );
+
+      setScale(DEFAULT_ZOOM);
+      setPan(nextPanX, nextPanY);
+      setScrollY(
+        clampScroll(
+          focused.scrollY,
           viewportWidth,
           viewportHeight,
           totalHeight,
           DEFAULT_ZOOM
-        );
+        )
+      );
 
-        setPan(clamp(panX + dx, -maxPanX, maxPanX), 0);
-        setScrollY(clamp(scrollY - dy, 0, maxScroll));
-        setSkipTransition(false);
-      };
-
-      requestAnimationFrame(() => requestAnimationFrame(align));
+      requestAnimationFrame(() => setSkipTransition(false));
     },
     [viewportWidth, viewportHeight, totalHeight, setScale, setPan, setScrollY]
   );
@@ -258,11 +389,9 @@ export function TimelineView() {
   };
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-canvas">
-      <header className="fixed left-0 right-0 top-0 z-30 flex items-center justify-between px-6 py-4">
-        <h1 className="font-brand text-2xl font-normal tracking-wide text-ink">
-          Obsessions
-        </h1>
+    <div className="relative h-screen w-full overflow-hidden">
+      <header className="fixed left-0 right-0 top-0 z-30 flex items-center justify-between px-6 py-5">
+        <h1 className="brand-wordmark">Obsessions</h1>
         <div className="flex items-center gap-4">
           <button
             type="button"
@@ -271,14 +400,38 @@ export function TimelineView() {
           >
             + New entry
           </button>
-          <button
-            type="button"
-            onClick={resetView}
-            className="hidden font-mono text-xs text-muted hover:text-ink sm:block"
-            title="Reset zoom (R)"
-          >
-            {Math.round(scale * 100)}%
-          </button>
+          <div className="hidden items-center gap-0.5 sm:flex">
+            <button
+              type="button"
+              onClick={() => {
+                zoomOut(zoomContext(viewportWidth / 2, viewportHeight / 2));
+                bumpZoomTransition();
+              }}
+              className="flex h-8 w-8 items-center justify-center font-mono text-sm text-muted hover:text-ink"
+              aria-label="Zoom out"
+            >
+              −
+            </button>
+            <button
+              type="button"
+              onClick={resetView}
+              className="min-w-[3.25rem] px-1 font-mono text-xs text-muted hover:text-ink"
+              title="Reset zoom (R)"
+            >
+              {formatZoomPercent(scale)}%
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                zoomIn(zoomContext(viewportWidth / 2, viewportHeight / 2));
+                bumpZoomTransition();
+              }}
+              className="flex h-8 w-8 items-center justify-center font-mono text-sm text-muted hover:text-ink"
+              aria-label="Zoom in"
+            >
+              +
+            </button>
+          </div>
           <button
             type="button"
             onClick={handleSignOut}
@@ -303,7 +456,7 @@ export function TimelineView() {
           className={`relative mx-auto ${isPanning || skipTransition ? "" : "transition-transform duration-300 ease-out"}`}
           style={{
             transform: `translate(${panX}px, ${-scrollY + panY}px) scale(${scale})`,
-            transformOrigin: "top right",
+            transformOrigin: "center top",
             width: "100%",
             height: totalHeight,
             willChange: "transform",
@@ -367,11 +520,13 @@ export function TimelineView() {
         scrollY={scrollY}
         totalHeight={totalHeight}
         viewportHeight={viewportHeight}
+        viewportWidth={viewportWidth}
+        scale={scale}
         onJump={setScrollY}
       />
 
       <footer className="fixed bottom-4 left-6 z-30 hidden font-mono text-[10px] text-muted/60 sm:block">
-        ↑↓ scroll · click image to focus · drag to pan · +/- zoom · R reset
+        Scroll · pinch or ⌘+scroll to zoom · drag to pan · R to reset
       </footer>
 
       {userId && (

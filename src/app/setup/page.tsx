@@ -1,6 +1,6 @@
 export default function SetupPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-canvas px-6">
+    <div className="flex min-h-screen items-center justify-center px-6">
       <div className="max-w-lg">
         <h1 className="font-serif text-2xl font-medium text-ink">Setup required</h1>
         <p className="mt-4 font-sans text-sm leading-relaxed text-muted">

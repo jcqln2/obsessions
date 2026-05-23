@@ -63,9 +63,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-canvas px-4">
+    <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <h1 className="font-brand text-3xl font-normal tracking-wide text-ink">Obsessions</h1>
+        <h1 className="brand-wordmark">Obsessions</h1>
         <p className="mt-2 font-sans text-sm text-muted">
           Your private obsession collage tool
         </p>

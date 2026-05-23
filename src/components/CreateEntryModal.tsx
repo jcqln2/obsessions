@@ -142,7 +142,7 @@ export function CreateEntryModal({
             aria-label="Close"
           />
           <motion.div
-            className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-sm bg-canvas p-6 shadow-scrap"
+            className="canvas-panel relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-sm p-6"
             initial={{ scale: 0.96, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.96, opacity: 0 }}

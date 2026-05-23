@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
+import { getCollageBounds } from "./collage";
 import { buildTimelineMarkers, entryHeight, fetchEntries } from "./entries";
 import type { Entry } from "./types";
 
@@ -36,8 +37,19 @@ describe("entries", () => {
   });
 
   it("entryHeight includes collage height plus padding", () => {
-    const h = entryHeight(mockEntry());
-    expect(h).toBe(280 + 140);
+    const entry = mockEntry();
+    const { height: collageH } = getCollageBounds(
+      entry.images.map((img) => ({
+        x: img.position_x,
+        y: img.position_y,
+        rotation: img.rotation_degrees,
+        scale: img.scale_factor,
+        width: img.width_px,
+        height: img.height_px,
+        zIndex: img.z_index,
+      }))
+    );
+    expect(entryHeight(entry)).toBe(collageH + 120);
   });
 
   it("buildTimelineMarkers dedupes months", () => {
