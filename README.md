@@ -56,6 +56,8 @@ This repo is set up for **Cursor agents + GitHub Actions** (hybrid, full-auto de
 | [docs/github-setup.md](docs/github-setup.md) | Branch protection & auto-merge (one-time) |
 | [docs/runbooks/incident.md](docs/runbooks/incident.md) | Rollback & incidents |
 | [docs/observability.md](docs/observability.md) | Cheap vs medium monitoring |
+| [docs/security.md](docs/security.md) | Turnstile, Upstash, GA hardening |
+| [docs/k6.md](docs/k6.md) | k6 waitlist smoke & rate-limit tests |
 **Agentic CI enabled**
 
 **CI:** lint → test → build → secret scan on every PR and `main`.
@@ -63,6 +65,8 @@ This repo is set up for **Cursor agents + GitHub Actions** (hybrid, full-auto de
 **Auto-merge:** PRs labeled `agent-pr` or branch `cursor/*` squash-merge when CI passes (see [auto-merge.yml](.github/workflows/auto-merge.yml)).
 
 **Deploy verify:** Smoke tests `/llm.txt`, `/login`, `/skills`, waitlist API after each `main` deploy.
+
+**k6 waitlist:** Manual workflow — login/Turnstile smoke + 10-concurrent rate-limit test ([docs/k6.md](docs/k6.md)).
 
 **Budget:** ~$0–25/mo (Vercel/Supabase free + Cursor Pro). Medium tier ~$60–130/mo — see [docs/observability.md](docs/observability.md).
 
