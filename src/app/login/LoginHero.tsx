@@ -14,8 +14,8 @@ export function LoginHero() {
       <StudioLogo />
 
       <p className="mt-3 text-[13px] leading-relaxed text-blush-500">
-        Your creative archive for dioramas, custom dolls &amp; scale builds. Save
-        images, links &amp; notes — beautifully organized.
+        For all things dioramas, scale builds, custom doll building. Save images,
+        links &amp; notes related to everything you&apos;re building!
       </p>
 
       <div className="mt-4 grid grid-cols-4 gap-2">
