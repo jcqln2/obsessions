@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EntryCard } from "./EntryCard";
 import { StudioLogo } from "./StudioLogo";
 import { TimelineScrubber } from "./TimelineScrubber";
+import { AccountSettingsModal } from "./AccountSettingsModal";
 import { CreateEntryModal } from "./CreateEntryModal";
 import { QuickLinkCapture } from "./QuickLinkCapture";
 import { QuickNoteCapture } from "./QuickNoteCapture";
@@ -36,6 +37,7 @@ export function TimelineView() {
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [noteCaptureOpen, setNoteCaptureOpen] = useState(false);
   const [linkCaptureOpen, setLinkCaptureOpen] = useState(false);
+  const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
   const [userId, setUserId] = useState<string>("");
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewportHeight, setViewportHeight] = useState(800);
@@ -485,6 +487,13 @@ export function TimelineView() {
           </div>
           <button
             type="button"
+            onClick={() => setAccountSettingsOpen(true)}
+            className="font-sans text-xs text-blush-400 hover:text-blush-700"
+          >
+            Account
+          </button>
+          <button
+            type="button"
             onClick={handleSignOut}
             className="font-sans text-xs text-blush-400 hover:text-blush-700"
           >
@@ -616,6 +625,11 @@ export function TimelineView() {
           />
         </>
       )}
+
+      <AccountSettingsModal
+        open={accountSettingsOpen}
+        onClose={() => setAccountSettingsOpen(false)}
+      />
     </div>
   );
 }
