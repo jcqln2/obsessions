@@ -66,7 +66,7 @@ This repo is set up for **Cursor agents + GitHub Actions** (hybrid, full-auto de
 
 **Deploy verify:** Smoke tests `/llm.txt`, `/login`, `/skills`, waitlist API after each `main` deploy.
 
-**k6 waitlist:** Manual workflow — login/Turnstile smoke + 10-concurrent rate-limit test ([docs/k6.md](docs/k6.md)).
+**k6-rate-limit-test:** Manual workflow — login/Turnstile smoke + 10-concurrent rate-limit test ([docs/k6.md](docs/k6.md)).
 
 **Budget:** ~$0–25/mo (Vercel/Supabase free + Cursor Pro). Medium tier ~$60–130/mo — see [docs/observability.md](docs/observability.md).
 
