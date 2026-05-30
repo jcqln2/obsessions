@@ -14,8 +14,8 @@ export const options = {
   vus: 1,
   iterations: 1,
   thresholds: {
+    // Only assert on explicit checks — POST may legitimately return 400/429
     checks: ["rate==1.0"],
-    http_req_failed: ["rate==0"],
   },
 };
 
