@@ -119,6 +119,88 @@ body::after {
 }
 
 @layer components {
+  .blush-canvas-bg {
+    position: relative;
+    isolation: isolate;
+    background-color: #fdf4f7;
+    background-image:
+      radial-gradient(
+        ellipse 130% 90% at 50% -10%,
+        #fffafc 0%,
+        transparent 58%
+      ),
+      radial-gradient(
+        ellipse 85% 65% at 100% 100%,
+        rgba(237, 147, 177, 0.12) 0%,
+        transparent 52%
+      ),
+      radial-gradient(
+        ellipse 75% 55% at 0% 95%,
+        rgba(244, 192, 209, 0.14) 0%,
+        transparent 48%
+      ),
+      repeating-linear-gradient(
+        93deg,
+        transparent 0,
+        transparent 2px,
+        rgba(196, 112, 160, 0.018) 2px,
+        rgba(196, 112, 160, 0.018) 3px
+      ),
+      repeating-linear-gradient(
+        3deg,
+        transparent 0,
+        transparent 2px,
+        rgba(184, 90, 138, 0.014) 2px,
+        rgba(184, 90, 138, 0.014) 3px
+      ),
+      repeating-linear-gradient(
+        88deg,
+        transparent 0,
+        transparent 11px,
+        rgba(255, 250, 252, 0.5) 11px,
+        rgba(255, 250, 252, 0.5) 12px
+      ),
+      linear-gradient(
+        168deg,
+        #fffafc 0%,
+        #fdf4f7 28%,
+        #f9dce8 55%,
+        #f4c0d1 78%,
+        #f0b8cc 100%
+      );
+    background-size:
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      5px 5px,
+      7px 7px,
+      24px 24px,
+      100% 100%;
+  }
+
+  .blush-canvas-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.35;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+    background-size: 180px 180px;
+  }
+
+  .blush-canvas-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse 95% 88% at 50% 45%,
+      transparent 42%,
+      rgba(153, 53, 86, 0.06) 100%
+    );
+  }
+
   .canvas-panel {
     background-color: rgba(238, 237, 234, 0.92);
     backdrop-filter: blur(8px);

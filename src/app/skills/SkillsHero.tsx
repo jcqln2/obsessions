@@ -1,14 +1,10 @@
-import { Bot, LayoutGrid } from "lucide-react";
+import { Bot } from "lucide-react";
+import { StudioLogo } from "@/components/StudioLogo";
 
 export function SkillsHero() {
   return (
     <section className="border-b border-blush-200 bg-blush-100 px-6 py-5">
-      <div className="flex items-center gap-3">
-        <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg bg-blush-400">
-          <LayoutGrid className="h-[18px] w-[18px] text-blush-50" aria-hidden />
-        </div>
-        <h1 className="text-xl font-medium text-blush-700">Miniature Studio</h1>
-      </div>
+      <StudioLogo />
 
       <div className="mt-3 flex items-start gap-2">
         <Bot className="mt-0.5 h-4 w-4 shrink-0 text-blush-400" aria-hidden />

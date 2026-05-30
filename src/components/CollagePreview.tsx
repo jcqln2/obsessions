@@ -29,7 +29,7 @@ export function CollagePreview({
   if (!images.length) {
     return (
       <div
-        className={`relative min-h-[200px] border border-dashed border-muted/30 bg-canvas/50 ${className}`}
+        className={`relative min-h-[200px] rounded-lg border border-dashed border-blush-200 bg-blush-100/50 ${className}`}
       />
     );
   }
@@ -75,7 +75,7 @@ export function CollagePreview({
                   onImageClick?.(img, e.currentTarget);
                   window.setTimeout(() => setSelectedIndex(i), 320);
                 }}
-                className="block h-full w-full cursor-zoom-in appearance-none border-0 bg-transparent p-0 transition hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-ink/30"
+                className="block h-full w-full cursor-zoom-in appearance-none border-0 bg-transparent p-0 transition hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-blush-400"
                 aria-label={`View image ${i + 1}${entryTitle ? ` from ${entryTitle}` : ""}`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
