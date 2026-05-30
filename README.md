@@ -26,7 +26,15 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000), sign up, and create your first entry
+Open [http://localhost:3000](http://localhost:3000) and sign in.
+
+### Waitlist (closed beta)
+
+1. Run `supabase/migrations/004_waitlist.sql` in the Supabase SQL Editor.
+2. In **Authentication → Providers → Email**, turn **off** “Allow new users to sign up” so only invited accounts can register.
+3. View waitlist emails in **Table Editor → waitlist**. Invite users via **Authentication → Users → Invite user**, then set `status` to `invited`.
+
+Public visitors use **Waitlist** on `/login`; existing users use **Sign in**.
 
 
 ## Project structure
