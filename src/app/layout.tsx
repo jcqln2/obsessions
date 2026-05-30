@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Cormorant_Garamond, Inter, JetBrains_Mono } from "next/font/google";
 import { SITE_URL } from "@/lib/site";
+import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
 const cuteNotes = localFont({
@@ -30,6 +31,14 @@ const mono = JetBrains_Mono({
 const title = "Obsessions - Diorama, Miniature & Doll Collection Tracker";
 const description =
   "A visual bookmarking app and digital sandbox built to catalog, tag, and organize miniatures, doll dioramas, and hobby inspiration.";
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+} as const;
 
 export const metadata: Metadata = {
   title: {
@@ -79,7 +88,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body
         className={`${inter.variable} ${cormorant.variable} ${mono.variable} ${cuteNotes.variable} font-sans antialiased`}
       >

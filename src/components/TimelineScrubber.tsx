@@ -45,10 +45,10 @@ export function TimelineScrubber({
         className="relative flex flex-col items-end"
         style={{ height: trackHeight }}
       >
-        <div className="absolute right-3 top-0 h-full w-px bg-blush-300/50" />
+        <div className="absolute right-3 top-0 h-full w-px bg-blush-300/50 dark:bg-stone-600/50" />
 
         <div
-          className="absolute right-2 h-6 w-1.5 rounded-full bg-blush-400 transition-[top] duration-150"
+          className="absolute right-2 h-6 w-1.5 rounded-full bg-blush-400 transition-[top] duration-150 dark:bg-stone-400"
           style={{ top: thumbTop }}
           role="slider"
           aria-valuenow={scrollY}
@@ -67,7 +67,7 @@ export function TimelineScrubber({
               key={year}
               type="button"
               onClick={() => onJump(first.y)}
-              className="absolute right-0 font-mono text-[11px] text-blush-400 transition hover:text-blush-700"
+              className="absolute right-0 font-mono text-[11px] text-blush-400 transition hover:text-blush-700 dark:text-stone-500 dark:hover:text-stone-300"
               style={{ top: Math.min(pos, trackHeight - 20) }}
             >
               {year}
@@ -81,7 +81,7 @@ export function TimelineScrubber({
               key={`${m.entryId}-${m.label}`}
               type="button"
               onClick={() => onJump(m.y)}
-              className="text-right font-mono text-[10px] text-blush-400 transition hover:text-blush-700"
+              className="text-right font-mono text-[10px] text-blush-400 transition hover:text-blush-700 dark:text-stone-500 dark:hover:text-stone-300"
             >
               {m.label}
             </button>

@@ -87,24 +87,24 @@ export function AccountSettingsModal({ open, onClose }: AccountSettingsModalProp
         >
           <button
             type="button"
-            className="absolute inset-0 bg-blush-700/30 backdrop-blur-sm"
+            className="absolute inset-0 bg-blush-700/30 backdrop-blur-sm dark:bg-black/50"
             onClick={onClose}
             aria-label="Close"
           />
           <motion.div
-            className="relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl bg-blush-50 p-5 shadow-[0_4px_24px_rgba(153,53,86,0.08)]"
+            className="relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl bg-blush-50 p-5 shadow-[0_4px_24px_rgba(153,53,86,0.08)] dark:bg-stone-900 dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]"
             initial={{ y: 16, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 16, opacity: 0 }}
           >
-            <h2 className="text-base font-medium text-blush-700">Account &amp; data</h2>
-            <p className="mt-1 text-sm text-blush-500">
+            <h2 className="text-base font-medium text-blush-700 dark:text-stone-200">Account &amp; data</h2>
+            <p className="mt-1 text-sm text-blush-500 dark:text-stone-400">
               Download your timeline or permanently delete your account and all associated data.
             </p>
 
-            <section className="mt-5 rounded-lg border border-blush-200 bg-blush-100 p-4">
-              <h3 className="text-sm font-medium text-blush-700">Download your data</h3>
-              <p className="mt-1 text-xs leading-relaxed text-blush-500">
+            <section className="mt-5 rounded-lg border border-blush-200 bg-blush-100 p-4 dark:border-stone-700 dark:bg-stone-800/80">
+              <h3 className="text-sm font-medium text-blush-700 dark:text-stone-200">Download your data</h3>
+              <p className="mt-1 text-xs leading-relaxed text-blush-500 dark:text-stone-400">
                 Exports all entries, notes, links, and temporary signed image URLs (valid for 7
                 days).
               </p>
@@ -118,9 +118,9 @@ export function AccountSettingsModal({ open, onClose }: AccountSettingsModalProp
               </button>
             </section>
 
-            <section className="mt-4 rounded-lg border border-red-200 bg-red-50/50 p-4">
-              <h3 className="text-sm font-medium text-red-800">Delete account</h3>
-              <p className="mt-1 text-xs leading-relaxed text-red-700/90">
+            <section className="mt-4 rounded-lg border border-red-200 bg-red-50/50 p-4 dark:border-red-900/50 dark:bg-red-950/30">
+              <h3 className="text-sm font-medium text-red-800 dark:text-red-300">Delete account</h3>
+              <p className="mt-1 text-xs leading-relaxed text-red-700/90 dark:text-red-300/80">
                 Permanently removes your entries, images, and login. This cannot be undone.
               </p>
               <label className="mt-3 block">
@@ -132,7 +132,7 @@ export function AccountSettingsModal({ open, onClose }: AccountSettingsModalProp
                   value={confirmPhrase}
                   onChange={(e) => setConfirmPhrase(e.target.value)}
                   autoComplete="off"
-                  className="mt-1 h-[42px] w-full rounded-lg border border-red-200 bg-white px-3 text-sm text-blush-700 outline-none focus:border-red-400"
+                  className="mt-1 h-[42px] w-full rounded-lg border border-red-200 bg-white px-3 text-sm text-blush-700 outline-none focus:border-red-400 dark:border-red-800 dark:bg-stone-950 dark:text-stone-200 dark:focus:border-red-600"
                 />
               </label>
               <button
@@ -146,12 +146,14 @@ export function AccountSettingsModal({ open, onClose }: AccountSettingsModalProp
             </section>
 
             {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-            {message && <p className="mt-3 text-sm text-blush-700">{message}</p>}
+            {message && (
+              <p className="mt-3 text-sm text-blush-700 dark:text-stone-300">{message}</p>
+            )}
 
             <button
               type="button"
               onClick={onClose}
-              className="mt-4 w-full text-center text-sm text-blush-500 hover:text-blush-700"
+              className="mt-4 w-full text-center text-sm text-blush-500 hover:text-blush-700 dark:text-stone-400 dark:hover:text-stone-200"
             >
               Close
             </button>
