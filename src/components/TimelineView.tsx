@@ -276,8 +276,13 @@ export function TimelineView() {
   const dragRef = useRef<{ x: number; y: number; startPanX: number; startPanY: number } | null>(null);
 
   useEffect(() => {
+    const isTypingTarget = (target: EventTarget | null) =>
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable);
+
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.code === "Space" && !(e.target instanceof HTMLInputElement)) {
+      if (e.code === "Space" && !isTypingTarget(e.target)) {
         e.preventDefault();
         setSpaceHeld(true);
       }
