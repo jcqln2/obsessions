@@ -1,0 +1,7 @@
+# Sensitive paths require owner review (blocks auto-merge without human-approved)
+/supabase/                    @jcqln2
+/src/lib/supabase/middleware.ts @jcqln2
+/src/middleware.ts            @jcqln2
+/src/app/auth/                @jcqln2
+/public/fonts/                @jcqln2
+.env.example                  @jcqln2

@@ -1,0 +1,83 @@
+name: Deploy verify
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: Site URL to smoke test
+        required: false
+        default: https://obsessions-snowy.vercel.app
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    env:
+      SITE_URL: ${{ github.event.inputs.site_url || 'https://obsessions-snowy.vercel.app' }}
+    steps:
+      - name: Wait for Vercel deploy
+        run: sleep 90
+
+      - name: GET /llm.txt
+        run: |
+          code=$(curl -s -o /tmp/llm.txt -w "%{http_code}" "$SITE_URL/llm.txt")
+          test "$code" = "200"
+          grep -q "Obsessions" /tmp/llm.txt
+          grep -q "waitlist" /tmp/llm.txt
+
+      - name: GET /login
+        run: |
+          code=$(curl -s -o /tmp/login.html -w "%{http_code}" "$SITE_URL/login")
+          test "$code" = "200"
+          grep -qi "waitlist" /tmp/login.html
+
+      - name: GET /skills
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" "$SITE_URL/skills")
+          test "$code" = "200"
+
+      - name: GET /.well-known/ai-plugin.json
+        run: |
+          code=$(curl -s -o /tmp/manifest.json -w "%{http_code}" "$SITE_URL/.well-known/ai-plugin.json")
+          test "$code" = "200"
+          grep -q "waitlist_only" /tmp/manifest.json
+
+      - name: POST /api/waitlist (honeypot path)
+        run: |
+          code=$(curl -s -o /tmp/wl.json -w "%{http_code}" \
+            -X POST "$SITE_URL/api/waitlist" \
+            -H "Content-Type: application/json" \
+            -d '{"email":"ci-smoke@example.com","website":"http://bot"}')
+          test "$code" = "200"
+
+      - name: Summary
+        run: echo "Smoke tests passed for $SITE_URL"
+
+  notify-failure:
+    runs-on: ubuntu-latest
+    needs: smoke
+    if: failure()
+    env:
+      SITE_URL: ${{ github.event.inputs.site_url || 'https://obsessions-snowy.vercel.app' }}
+    steps:
+      - name: Create incident issue on failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `Deploy verify failed — ${new Date().toISOString().slice(0, 10)}`;
+            const body = [
+              'Production smoke tests failed after deploy to main.',
+              '',
+              `- Workflow: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              `- Site: ${process.env.SITE_URL || 'https://obsessions-snowy.vercel.app'}`,
+              '',
+              'See docs/runbooks/incident.md for rollback steps.',
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['incident', 'deploy'],
+            });

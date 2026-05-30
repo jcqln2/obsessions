@@ -1,0 +1,46 @@
+name: Agent task
+
+description: Work item for Cursor or other coding agents
+
+labels:
+  - agent-pr
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Agents: read [AGENTS.md](../AGENTS.md). Branch `cursor/issue-<number>-<slug>`, label PR `agent-pr`.
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should be done?
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How do we know it's done?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Constraints
+      options:
+        - label: Must preserve waitlist-only access (no public sign-up)
+          required: true
+        - label: No Supabase migration apply (SQL file OK, human runs it)
+          required: false
+        - label: UI change expected
+          required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
+      description: Links, screenshots, repro steps

@@ -1,0 +1,56 @@
+name: Hygiene
+
+on:
+  schedule:
+    - cron: "0 14 * * 1"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  open-hygiene-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check llm.txt links
+        run: |
+          grep -q "obsessions-snowy.vercel.app/login" public/llm.txt
+          grep -q "waitlist" public/llm.txt
+          grep -q "waitlist_only" public/.well-known/ai-plugin.json
+
+      - name: Open weekly hygiene issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const week = new Date().toISOString().slice(0, 10);
+            const title = `Weekly hygiene — ${week}`;
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'hygiene',
+            });
+            if (existing.length > 0) {
+              core.info('Hygiene issue already open');
+              return;
+            }
+            const body = [
+              'Automated weekly checklist for Cursor agent (label PR `agent-pr`):',
+              '',
+              '- [ ] Run `npm audit` — patch safe deps if needed',
+              '- [ ] Confirm `public/llm.txt` waitlist URLs match `NEXT_PUBLIC_SITE_URL`',
+              '- [ ] Confirm login page has Waitlist tab, no public sign-up',
+              '- [ ] Review open Dependabot PRs',
+              '- [ ] Check Supabase dashboard: sign-up disabled, waitlist table OK',
+              '',
+              'See AGENTS.md and docs/runbooks/incident.md',
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['hygiene', 'agent-pr'],
+            });

@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-test-build:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key-for-ci-build
+      NEXT_PUBLIC_SITE_URL: https://obsessions-snowy.vercel.app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test:run
+
+      - name: Build
+        run: npm run build
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  policy-check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Block public sign-up copy in login
+        run: |
+          if grep -E 'Need an account\? Sign up|mode === "signup"|Create account' src/app/login/page.tsx; then
+            echo "Public sign-up UI detected — waitlist-only policy violated"
+            exit 1
+          fi
+          echo "Login page policy OK"
+
+      - name: Flag forbidden path changes
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          FORBIDDEN=$(git diff --name-only "$BASE" "$HEAD" | grep -E \
+            '^supabase/migrations/|^supabase/storage-policies|^src/lib/supabase/middleware|^src/middleware\.ts|^src/app/auth/|^public/fonts/' \
+            || true)
+          if [ -n "$FORBIDDEN" ]; then
+            echo "::warning title=Forbidden paths changed::Add label human-approved and do not auto-merge:"
+            echo "$FORBIDDEN"
+            echo "FORBIDDEN_CHANGED=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Require human-approved for forbidden paths
+        if: env.FORBIDDEN_CHANGED == 'true'
+        env:
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          echo "$LABELS" | grep -q human-approved || {
+            echo "Forbidden paths changed without human-approved label"
+            exit 1
+          }

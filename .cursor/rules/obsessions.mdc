@@ -1,0 +1,37 @@
+---
+description: Obsessions stack, invariants, and agent PR workflow
+alwaysApply: true
+---
+
+# Obsessions agent rules
+
+Read [AGENTS.md](../../AGENTS.md) for the full contract.
+
+## Stack
+
+Next.js 15 App Router, Supabase (Auth/Postgres/Storage), Tailwind, Framer Motion, Zustand, Vitest.
+
+## Before every PR
+
+```bash
+npm run lint && npm run test:run && npm run build
+```
+
+## Invariants
+
+- Waitlist-only: no public sign-up UI or `signUp` flows
+- Keep RLS on entries, images, waitlist
+- Never commit secrets or edit `supabase/migrations/` without `human-approved` label
+- JSX text: avoid unescaped apostrophes (use template strings)
+
+## Branches & PRs
+
+- Branch: `cursor/issue-<n>-<slug>`
+- Label PR: `agent-pr`
+- Do not auto-merge if touching middleware, auth, supabase migrations, or fonts
+
+## Conventions
+
+- Match existing patterns in surrounding files; minimal scope
+- Entry layout: [EntryCard.tsx](../../src/components/EntryCard.tsx), timeline: [TimelineView.tsx](../../src/components/TimelineView.tsx)
+- Deploy skill: [.cursor/skills/deploy/SKILL.md](../skills/deploy/SKILL.md)

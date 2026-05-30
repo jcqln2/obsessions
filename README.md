@@ -46,6 +46,24 @@ After deploy, verify these public URLs (no auth):
 
 Set `NEXT_PUBLIC_SITE_URL` in Vercel env for correct canonical links.
 
+## Agentic engineering
+
+This repo is set up for **Cursor agents + GitHub Actions** (hybrid, full-auto deploy on green CI).
+
+| Doc | Purpose |
+|-----|---------|
+| [AGENTS.md](AGENTS.md) | Internal agent contract, invariants, forbidden paths |
+| [docs/github-setup.md](docs/github-setup.md) | Branch protection & auto-merge (one-time) |
+| [docs/runbooks/incident.md](docs/runbooks/incident.md) | Rollback & incidents |
+| [docs/observability.md](docs/observability.md) | Cheap vs medium monitoring |
+
+**CI:** lint → test → build → secret scan on every PR and `main`.
+
+**Auto-merge:** PRs labeled `agent-pr` or branch `cursor/*` squash-merge when CI passes (see [auto-merge.yml](.github/workflows/auto-merge.yml)).
+
+**Deploy verify:** Smoke tests `/llm.txt`, `/login`, `/skills`, waitlist API after each `main` deploy.
+
+**Budget:** ~$0–25/mo (Vercel/Supabase free + Cursor Pro). Medium tier ~$60–130/mo — see [docs/observability.md](docs/observability.md).
 
 ## Project structure
 
@@ -56,4 +74,7 @@ src/
   lib/           # Collage algorithm, Supabase, uploads
   store/         # Zoom/scroll state (Zustand)
 supabase/        # SQL migrations & storage policies
+.github/         # CI, auto-merge, Dependabot, hygiene
+.cursor/         # Cursor rules & deploy skill
+docs/            # Runbooks & GitHub setup
 ```

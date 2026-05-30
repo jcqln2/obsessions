@@ -1,0 +1,73 @@
+name: Auto merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, labeled, unlabeled, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    if: github.repository == 'jcqln2/obsessions'
+    steps:
+      - name: Check eligibility
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            if (!pr || pr.draft) {
+              core.setOutput('eligible', 'false');
+              return;
+            }
+            const labels = pr.labels.map((l) => l.name);
+            const blocked = ['blocked', 'migration', 'human-required'];
+            if (blocked.some((b) => labels.includes(b))) {
+              core.setOutput('eligible', 'false');
+              return;
+            }
+            const branch = pr.head.ref;
+            const isAgent =
+              labels.includes('agent-pr') || branch.startsWith('cursor/');
+            if (!isAgent) {
+              core.setOutput('eligible', 'false');
+              return;
+            }
+            const forbidden = [
+              'supabase/migrations/',
+              'supabase/storage-policies',
+              'src/lib/supabase/middleware.ts',
+              'src/middleware.ts',
+              'src/app/auth/',
+              'public/fonts/',
+            ];
+            const files = await github.paginate(
+              github.rest.pulls.listFiles,
+              { owner: context.repo.owner, repo: context.repo.repo, pull_number: pr.number }
+            );
+            const touchedForbidden = files.some((f) =>
+              forbidden.some((p) => f.filename.startsWith(p) || f.filename === p)
+            );
+            if (touchedForbidden && !labels.includes('human-approved')) {
+              core.setOutput('eligible', 'false');
+              return;
+            }
+            core.setOutput('eligible', 'true');
+
+      - name: Enable auto-merge
+        if: steps.check.outputs.eligible == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.graphql(
+              `mutation($id: ID!) {
+                enablePullRequestAutoMerge(input: {
+                  pullRequestId: $id,
+                  mergeMethod: SQUASH
+                }) { pullRequest { autoMergeRequest { enabledAt } } }
+              }`,
+              { id: context.payload.pull_request.node_id }
+            );
