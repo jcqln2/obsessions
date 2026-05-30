@@ -5,6 +5,8 @@ import { EntryCard } from "./EntryCard";
 import { StudioLogo } from "./StudioLogo";
 import { TimelineScrubber } from "./TimelineScrubber";
 import { CreateEntryModal } from "./CreateEntryModal";
+import { QuickLinkCapture } from "./QuickLinkCapture";
+import { QuickNoteCapture } from "./QuickNoteCapture";
 import { useKeyboardNav } from "@/hooks/useKeyboardNav";
 import { fetchEntries, deleteEntry, entryHeight, buildTimelineMarkers } from "@/lib/entries";
 import type { Entry } from "@/lib/types";
@@ -31,7 +33,9 @@ export function TimelineView() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [noteCaptureOpen, setNoteCaptureOpen] = useState(false);
+  const [linkCaptureOpen, setLinkCaptureOpen] = useState(false);
   const [userId, setUserId] = useState<string>("");
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewportHeight, setViewportHeight] = useState(800);
@@ -302,7 +306,7 @@ export function TimelineView() {
 
     const target = e.target as HTMLElement;
     if (target.closest("button, a, input, textarea")) return;
-    if (isLeftClick && target.closest("[data-collage-image]") && !spaceHeld) return;
+    if (isLeftClick && target.closest("[data-collage-item]") && !spaceHeld) return;
 
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -327,7 +331,7 @@ export function TimelineView() {
     dragRef.current = null;
   };
 
-  const focusOnImage = useCallback(
+  const focusOnElement = useCallback(
     (element: HTMLElement) => {
       const container = containerRef.current;
       if (!container) return;
@@ -373,6 +377,31 @@ export function TimelineView() {
     [viewportWidth, viewportHeight, totalHeight, setScale, setPan, setScrollY]
   );
 
+  const focusOnEntry = useCallback(
+    (entryId: string) => {
+      const y = offsets.get(entryId);
+      if (y === undefined) return;
+      setSkipTransition(true);
+      setScale(DEFAULT_ZOOM);
+      setPan(0, 0);
+      setScrollY(
+        clampScroll(y - 80, viewportWidth, viewportHeight, totalHeight, DEFAULT_ZOOM)
+      );
+      requestAnimationFrame(() => setSkipTransition(false));
+    },
+    [offsets, viewportWidth, viewportHeight, totalHeight, setScale, setPan, setScrollY]
+  );
+
+  const handleCreated = useCallback(
+    async (entryId?: string) => {
+      await load();
+      if (entryId) {
+        window.setTimeout(() => focusOnEntry(entryId), 100);
+      }
+    },
+    [load, focusOnEntry]
+  );
+
   const handleDelete = async (id: string) => {
     if (!confirm("Remove this entry from your archive?")) return;
     await deleteEntry(id);
@@ -395,13 +424,27 @@ export function TimelineView() {
 
       <header className="fixed left-0 right-0 top-0 z-30 flex items-center justify-between border-b border-blush-200 bg-blush-100/90 px-6 py-4 backdrop-blur-sm">
         <StudioLogo />
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button
             type="button"
-            onClick={() => setModalOpen(true)}
+            onClick={() => setNoteCaptureOpen(true)}
+            className="font-sans text-sm text-blush-500 hover:text-blush-700"
+          >
+            + Note
+          </button>
+          <button
+            type="button"
+            onClick={() => setLinkCaptureOpen(true)}
+            className="font-sans text-sm text-blush-500 hover:text-blush-700"
+          >
+            + Link
+          </button>
+          <button
+            type="button"
+            onClick={() => setImageModalOpen(true)}
             className="font-sans text-sm text-blush-500 underline-offset-4 hover:text-blush-700 hover:underline"
           >
-            + New entry
+            + Images
           </button>
           <div className="hidden items-center gap-0.5 rounded-lg bg-blush-50 px-1 sm:flex">
             <button
@@ -493,15 +536,31 @@ export function TimelineView() {
             <div className="absolute right-16 top-40 w-full max-w-md text-left sm:right-24 lg:right-28">
               <p className="text-base font-medium text-blush-700">Your timeline is empty</p>
               <p className="mt-2 font-sans text-sm text-blush-500">
-                {`Drop a few screenshots of whatever you're obsessed with right now and we'll make a collage.`}
+                Pin a note, save a link, or drop images to start your collage.
               </p>
-              <button
-                type="button"
-                onClick={() => setModalOpen(true)}
-                className="mt-6 rounded-lg bg-blush-400 px-6 py-3 font-sans text-sm font-medium text-blush-50 hover:bg-blush-500"
-              >
-                Create first entry
-              </button>
+              <div className="mt-6 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setNoteCaptureOpen(true)}
+                  className="rounded-lg bg-blush-400 px-4 py-2.5 font-sans text-sm font-medium text-blush-50 hover:bg-blush-500"
+                >
+                  + Note
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLinkCaptureOpen(true)}
+                  className="rounded-lg bg-blush-400 px-4 py-2.5 font-sans text-sm font-medium text-blush-50 hover:bg-blush-500"
+                >
+                  + Link
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageModalOpen(true)}
+                  className="rounded-lg border border-blush-300 px-4 py-2.5 font-sans text-sm font-medium text-blush-600 hover:border-blush-400"
+                >
+                  + Images
+                </button>
+              </div>
             </div>
           )}
 
@@ -512,7 +571,7 @@ export function TimelineView() {
               y={offsets.get(entry.id) ?? 0}
               onDelete={handleDelete}
               onUpdate={handleEntryUpdate}
-              onImageClick={(_image, element) => focusOnImage(element)}
+              onItemClick={(_item, element) => focusOnElement(element)}
             />
           ))}
         </div>
@@ -533,12 +592,24 @@ export function TimelineView() {
       </footer>
 
       {userId && (
-        <CreateEntryModal
-          open={modalOpen}
-          onClose={() => setModalOpen(false)}
-          onCreated={load}
-          userId={userId}
-        />
+        <>
+          <CreateEntryModal
+            open={imageModalOpen}
+            onClose={() => setImageModalOpen(false)}
+            onCreated={() => handleCreated()}
+            userId={userId}
+          />
+          <QuickNoteCapture
+            open={noteCaptureOpen}
+            onClose={() => setNoteCaptureOpen(false)}
+            onCreated={handleCreated}
+          />
+          <QuickLinkCapture
+            open={linkCaptureOpen}
+            onClose={() => setLinkCaptureOpen(false)}
+            onCreated={handleCreated}
+          />
+        </>
       )}
     </div>
   );

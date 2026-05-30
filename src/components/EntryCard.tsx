@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import type { Entry, ImageRecord } from "@/lib/types";
+import type { CollageItemRecord, Entry } from "@/lib/types";
 import { formatEntryTimestamp } from "@/lib/collage";
 import { updateEntry } from "@/lib/entries";
 import { CollagePreview } from "./CollagePreview";
@@ -12,10 +12,10 @@ interface EntryCardProps {
   y: number;
   onDelete?: (id: string) => void;
   onUpdate?: (entry: Entry) => void;
-  onImageClick?: (image: ImageRecord, element: HTMLElement) => void;
+  onItemClick?: (item: CollageItemRecord, element: HTMLElement) => void;
 }
 
-export function EntryCard({ entry, y, onDelete, onUpdate, onImageClick }: EntryCardProps) {
+export function EntryCard({ entry, y, onDelete, onUpdate, onItemClick }: EntryCardProps) {
   const [title, setTitle] = useState(entry.title ?? "");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -126,18 +126,12 @@ export function EntryCard({ entry, y, onDelete, onUpdate, onImageClick }: EntryC
 
       <div className="flex justify-end">
         <CollagePreview
-          images={entry.images}
+          items={entry.items}
           entryTitle={entry.title}
           entryDate={entry.created_at}
-          onImageClick={onImageClick}
+          onItemClick={onItemClick}
         />
       </div>
-
-      {entry.notes && (
-        <p className="mt-4 max-w-lg font-sans text-sm leading-relaxed text-blush-600">
-          {entry.notes}
-        </p>
-      )}
     </motion.section>
   );
 }

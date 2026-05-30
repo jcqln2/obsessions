@@ -2,10 +2,19 @@
 
 import { useCallback, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { generateCollageLayout } from "@/lib/collage";
+import {
+  MAX_ITEMS_PER_ENTRY,
+  buildCreatePayload,
+  draftsToPreviewItems,
+  layoutDrafts,
+  newClientId,
+  validateLinkLabel,
+  validateLinkUrl,
+  validateNoteText,
+} from "@/lib/collage-items";
 import { createEntry } from "@/lib/entries";
 import { loadImageDimensions, uploadEntryImages } from "@/lib/upload";
-import type { LocalImageFile, ImageRecord } from "@/lib/types";
+import type { CollageItemRecord, DraftItem } from "@/lib/types";
 import { CollagePreview } from "./CollagePreview";
 
 interface CreateEntryModalProps {
@@ -23,91 +32,144 @@ export function CreateEntryModal({
 }: CreateEntryModalProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
-  const [files, setFiles] = useState<LocalImageFile[]>([]);
-  const [previewImages, setPreviewImages] = useState<ImageRecord[]>([]);
+  const [drafts, setDrafts] = useState<DraftItem[]>([]);
+  const [previewItems, setPreviewItems] = useState<CollageItemRecord[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkLabel, setLinkLabel] = useState("");
 
-  const rebuildPreview = useCallback((items: LocalImageFile[]) => {
+  const rebuildPreview = useCallback((items: DraftItem[]) => {
     if (items.length === 0) {
-      setPreviewImages([]);
+      setPreviewItems([]);
       return;
     }
-    const layout = generateCollageLayout(
-      items.map((f) => ({ width: f.width, height: f.height }))
-    );
-    const previews: ImageRecord[] = items.map((item, i) => ({
-      id: `preview-${i}`,
-      entry_id: "preview",
-      image_url: item.previewUrl,
-      storage_path: "",
-      position_x: layout[i].x,
-      position_y: layout[i].y,
-      rotation_degrees: layout[i].rotation,
-      scale_factor: layout[i].scale,
-      width_px: Math.round(layout[i].width),
-      height_px: Math.round(layout[i].height),
-      z_index: layout[i].zIndex,
-      created_at: new Date().toISOString(),
-    }));
-    setPreviewImages(previews);
+    const layout = layoutDrafts(items);
+    setPreviewItems(draftsToPreviewItems(items, layout));
   }, []);
+
+  const updateDrafts = (items: DraftItem[]) => {
+    setDrafts(items);
+    rebuildPreview(items);
+  };
 
   const addFiles = async (incoming: FileList | File[]) => {
     const list = Array.from(incoming).filter((f) => f.type.startsWith("image/"));
     if (!list.length) return;
 
-    const combined = [...files];
+    const combined = [...drafts];
     for (const file of list) {
-      if (combined.length >= 8) break;
+      if (combined.length >= MAX_ITEMS_PER_ENTRY) break;
       try {
         const dims = await loadImageDimensions(file);
-        combined.push({ file, previewUrl: dims.previewUrl, width: dims.width, height: dims.height });
+        combined.push({
+          kind: "image",
+          clientId: newClientId(),
+          file,
+          previewUrl: dims.previewUrl,
+          width: dims.width,
+          height: dims.height,
+        });
       } catch {
         /* skip bad files */
       }
     }
-    setFiles(combined);
-    rebuildPreview(combined);
+    updateDrafts(combined);
+    setError(null);
+  };
+
+  const addNote = () => {
+    const noteError = validateNoteText(noteDraft);
+    if (noteError) {
+      setError(noteError);
+      return;
+    }
+    if (drafts.length >= MAX_ITEMS_PER_ENTRY) {
+      setError(`Maximum ${MAX_ITEMS_PER_ENTRY} items per entry`);
+      return;
+    }
+    updateDrafts([
+      ...drafts,
+      { kind: "note", text: noteDraft.trim(), clientId: newClientId() },
+    ]);
+    setNoteDraft("");
+    setError(null);
+  };
+
+  const addLink = () => {
+    const urlError = validateLinkUrl(linkUrl);
+    if (urlError) {
+      setError(urlError);
+      return;
+    }
+    const labelError = validateLinkLabel(linkLabel);
+    if (labelError) {
+      setError(labelError);
+      return;
+    }
+    if (drafts.length >= MAX_ITEMS_PER_ENTRY) {
+      setError(`Maximum ${MAX_ITEMS_PER_ENTRY} items per entry`);
+      return;
+    }
+    updateDrafts([
+      ...drafts,
+      {
+        kind: "link",
+        url: linkUrl.trim(),
+        label: linkLabel.trim() || undefined,
+        clientId: newClientId(),
+      },
+    ]);
+    setLinkUrl("");
+    setLinkLabel("");
+    setError(null);
+  };
+
+  const removeDraft = (clientId: string) => {
+    const next = drafts.filter((d) => {
+      if (d.clientId !== clientId) return true;
+      if (d.kind === "image") URL.revokeObjectURL(d.previewUrl);
+      return false;
+    });
+    updateDrafts(next);
+  };
+
+  const resetState = () => {
+    drafts.forEach((d) => {
+      if (d.kind === "image") URL.revokeObjectURL(d.previewUrl);
+    });
+    setDrafts([]);
+    setPreviewItems([]);
+    setTitle("");
+    setNoteDraft("");
+    setLinkUrl("");
+    setLinkLabel("");
     setError(null);
   };
 
   const handleSave = async () => {
-    if (files.length < 1) {
-      setError("Add at least one image");
+    if (drafts.length < 1) {
+      setError("Add at least one image, note, or link");
       return;
     }
     setSaving(true);
     setError(null);
     try {
-      const layout = generateCollageLayout(
-        files.map((f) => ({ width: f.width, height: f.height }))
-      );
+      const layout = layoutDrafts(drafts);
+      const imageDrafts = drafts.filter((d): d is Extract<DraftItem, { kind: "image" }> => d.kind === "image");
       const uploaded = await uploadEntryImages(
-        files.map((f) => f.file),
+        imageDrafts.map((d) => d.file),
         userId
       );
 
       await createEntry({
         title: title.trim() || undefined,
-        images: uploaded.map((up, i) => ({
-          storagePath: up.storagePath,
-          imageUrl: up.imageUrl,
-          position_x: layout[i].x,
-          position_y: layout[i].y,
-          rotation_degrees: layout[i].rotation,
-          scale_factor: layout[i].scale,
-          width_px: Math.round(layout[i].width),
-          height_px: Math.round(layout[i].height),
-          z_index: layout[i].zIndex,
-        })),
+        items: buildCreatePayload(drafts, layout, uploaded),
       });
 
-      files.forEach((f) => URL.revokeObjectURL(f.previewUrl));
-      setFiles([]);
-      setPreviewImages([]);
-      setTitle("");
+      resetState();
       onCreated();
       onClose();
     } catch (e) {
@@ -118,11 +180,7 @@ export function CreateEntryModal({
   };
 
   const handleClose = () => {
-    files.forEach((f) => URL.revokeObjectURL(f.previewUrl));
-    setFiles([]);
-    setPreviewImages([]);
-    setTitle("");
-    setError(null);
+    resetState();
     onClose();
   };
 
@@ -148,13 +206,13 @@ export function CreateEntryModal({
             exit={{ scale: 0.96, opacity: 0 }}
             transition={{ duration: 0.25 }}
           >
-            <h2 className="text-base font-medium text-blush-700">Current obsession</h2>
+            <h2 className="text-base font-medium text-blush-700">New collage entry</h2>
             <p className="mt-1 font-sans text-sm text-blush-500">
-              Drop 1–8 screenshots. We&apos;ll scatter them into a collage.
+              Add up to {MAX_ITEMS_PER_ENTRY} images, notes, and links — scattered into a collage.
             </p>
 
             <div
-              className={`mt-6 cursor-pointer rounded-lg border border-dashed px-4 py-10 text-center transition ${
+              className={`mt-6 cursor-pointer rounded-lg border border-dashed px-4 py-8 text-center transition ${
                 dragOver
                   ? "border-blush-400 bg-blush-100"
                   : "border-blush-300 bg-blush-100 hover:border-blush-400"
@@ -178,7 +236,7 @@ export function CreateEntryModal({
                 Drag & drop images here, or click to browse
               </p>
               <p className="mt-1 font-mono text-xs text-blush-400">
-                {files.length}/8 selected
+                {drafts.length}/{MAX_ITEMS_PER_ENTRY} items
               </p>
               <input
                 ref={inputRef}
@@ -190,9 +248,82 @@ export function CreateEntryModal({
               />
             </div>
 
-            {previewImages.length > 0 && (
+            <div className="mt-4 space-y-3 rounded-lg border border-blush-200 bg-blush-100 p-4">
+              <p className="text-[10px] font-medium uppercase tracking-wide text-blush-400">
+                Add a note
+              </p>
+              <textarea
+                value={noteDraft}
+                onChange={(e) => setNoteDraft(e.target.value)}
+                placeholder="Quick thought or build note…"
+                rows={2}
+                maxLength={2000}
+                className="w-full resize-none rounded-lg border border-blush-300 bg-blush-50 px-3 py-2 text-sm text-blush-700 outline-none placeholder:text-blush-300 focus:border-blush-400"
+              />
+              <button
+                type="button"
+                onClick={addNote}
+                disabled={!noteDraft.trim() || drafts.length >= MAX_ITEMS_PER_ENTRY}
+                className="rounded-lg bg-blush-400 px-3 py-1.5 text-xs font-medium text-blush-50 hover:bg-blush-500 disabled:opacity-40"
+              >
+                Add note
+              </button>
+
+              <p className="pt-1 text-[10px] font-medium uppercase tracking-wide text-blush-400">
+                Add a link
+              </p>
+              <input
+                type="url"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                placeholder="https://…"
+                className="h-[38px] w-full rounded-lg border border-blush-300 bg-blush-50 px-3 text-sm text-blush-700 outline-none placeholder:text-blush-300 focus:border-blush-400"
+              />
+              <input
+                type="text"
+                maxLength={100}
+                value={linkLabel}
+                onChange={(e) => setLinkLabel(e.target.value)}
+                placeholder="Label (optional)"
+                className="h-[38px] w-full rounded-lg border border-blush-300 bg-blush-50 px-3 text-sm text-blush-700 outline-none placeholder:text-blush-300 focus:border-blush-400"
+              />
+              <button
+                type="button"
+                onClick={addLink}
+                disabled={!linkUrl.trim() || drafts.length >= MAX_ITEMS_PER_ENTRY}
+                className="rounded-lg bg-blush-400 px-3 py-1.5 text-xs font-medium text-blush-50 hover:bg-blush-500 disabled:opacity-40"
+              >
+                Add link
+              </button>
+            </div>
+
+            {drafts.length > 0 && (
+              <ul className="mt-4 space-y-1">
+                {drafts.map((draft) => (
+                  <li
+                    key={draft.clientId}
+                    className="flex items-center justify-between gap-2 text-xs text-blush-600"
+                  >
+                    <span className="truncate">
+                      {draft.kind === "image" && "Image"}
+                      {draft.kind === "note" && `Note: ${draft.text.slice(0, 40)}`}
+                      {draft.kind === "link" && `Link: ${draft.label || draft.url}`}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeDraft(draft.clientId)}
+                      className="shrink-0 text-blush-400 hover:text-blush-700"
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {previewItems.length > 0 && (
               <div className="mt-6 flex justify-center overflow-hidden">
-                <CollagePreview images={previewImages} />
+                <CollagePreview items={previewItems} />
               </div>
             )}
 
@@ -210,15 +341,13 @@ export function CreateEntryModal({
               />
             </label>
 
-            {error && (
-              <p className="mt-4 font-sans text-sm text-red-600">{error}</p>
-            )}
+            {error && <p className="mt-4 font-sans text-sm text-red-600">{error}</p>}
 
             <div className="mt-8 flex gap-3">
               <button
                 type="button"
                 onClick={handleSave}
-                disabled={saving || files.length < 1}
+                disabled={saving || drafts.length < 1}
                 className="h-[42px] flex-1 rounded-lg bg-blush-400 font-sans text-sm font-medium text-blush-50 transition hover:bg-blush-500 disabled:opacity-40"
               >
                 {saving ? "Saving…" : "Save to timeline"}
