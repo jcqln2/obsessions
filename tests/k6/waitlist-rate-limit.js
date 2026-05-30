@@ -31,7 +31,11 @@ export const options = {
 export default function () {
   const email = `k6-load-${__VU}-${Date.now()}@loadtest.invalid`;
   const req = postWaitlist(email);
-  const res = http.post(req.url, req.body, { headers: req.headers, tags: req.tags });
+  const res = http.post(req.url, req.body, {
+    headers: req.headers,
+    tags: req.tags,
+    responseCallback: http.expectedStatuses(400, 429),
+  });
 
   const body = parseJson(res);
   const rateLimited = res.status === 429;

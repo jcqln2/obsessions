@@ -19,7 +19,7 @@ jobs:
     env:
       BASE_URL: ${{ github.event.inputs.site_url || 'https://obsessions-snowy.vercel.app' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install k6
         uses: grafana/setup-k6-action@v1

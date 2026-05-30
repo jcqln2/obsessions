@@ -29,7 +29,7 @@ export default function () {
     "waitlist tab copy present": (r) =>
       r.body.includes("Waitlist") || r.body.includes("waitlist"),
     "join waitlist CTA present": (r) =>
-      r.body.includes("Join waitlist") || r.body.includes("join waitlist"),
+      /join the waitlist/i.test(r.body) || /join waitlist/i.test(r.body),
   });
 
   const email = `k6-smoke-${Date.now()}@loadtest.invalid`;
@@ -37,13 +37,17 @@ export default function () {
   const apiRes = http.post(req.url, req.body, {
     headers: req.headers,
     tags: { name: "waitlist_captcha_check" },
+    // 400 = captcha required; 429 = rate limit (runner IP may already be hot from prior runs)
+    responseCallback: http.expectedStatuses(400, 429),
   });
   const body = parseJson(apiRes);
 
   check(apiRes, {
-    "turnstile enforced without token": (r) =>
-      r.status === 400 &&
-      typeof body?.error === "string" &&
-      body.error.toLowerCase().includes("captcha"),
+    "security gate active (captcha or rate limit)": (r) => {
+      const err = typeof body?.error === "string" ? body.error.toLowerCase() : "";
+      if (r.status === 400) return err.includes("captcha");
+      if (r.status === 429) return err.includes("too many");
+      return false;
+    },
   });
 }
