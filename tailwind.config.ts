@@ -18,6 +18,15 @@ const config: Config = {
         ink: "#2a2a2a",
         muted: "#7c7a76",
         timeline: "#3a3a38",
+        blush: {
+          50: "#FFFAFC",
+          100: "#FDF4F7",
+          200: "#F9DCE8",
+          300: "#F4C0D1",
+          400: "#ED93B1",
+          500: "#C470A0",
+          700: "#993556",
+        },
       },
       fontFamily: {
         brand: ["var(--font-brand)", "var(--font-serif)", "Georgia", "serif"],

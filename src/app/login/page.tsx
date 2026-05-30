@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { LoginCard } from "./LoginCard";
+import { LoginHero } from "./LoginHero";
+import { LoginTrustBar } from "./LoginTrustBar";
+import { SignInForm } from "./SignInForm";
+import { WaitlistForm } from "./WaitlistForm";
 
 type Tab = "signin" | "waitlist";
 
@@ -13,6 +18,12 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [website, setWebsite] = useState("");
+
+  const switchTab = (next: Tab) => {
+    setTab(next);
+    setError(null);
+    setMessage(null);
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,151 +97,96 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <h1 className="brand-wordmark">Obsessions</h1>
-        <p className="mt-2 font-sans text-sm text-muted">
-          {tab === "signin"
-            ? "Sign in to your archive"
-            : "Join the waitlist for early access"}
-        </p>
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-8">
+      <LoginCard>
+        <LoginHero />
 
-        <div className="mt-8 flex gap-6 border-b border-muted/20 font-sans text-sm">
-          <button
-            type="button"
-            onClick={() => {
-              setTab("signin");
-              setError(null);
-              setMessage(null);
-            }}
-            className={`pb-2 transition ${
-              tab === "signin"
-                ? "border-b border-ink text-ink"
-                : "text-muted hover:text-ink"
-            }`}
+        <section className="bg-blush-50 px-6 py-5">
+          <div
+            className="flex gap-6 border-b border-blush-200 text-sm"
+            role="tablist"
+            aria-label="Authentication"
           >
-            Sign in
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setTab("waitlist");
-              setError(null);
-              setMessage(null);
-            }}
-            className={`pb-2 transition ${
-              tab === "waitlist"
-                ? "border-b border-ink text-ink"
-                : "text-muted hover:text-ink"
-            }`}
-          >
-            Waitlist
-          </button>
-        </div>
-
-        {tab === "signin" ? (
-          <form onSubmit={handleSignIn} className="mt-8 space-y-4">
-            <label className="block">
-              <span className="font-mono text-xs text-muted">Email</span>
-              <input
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full border-b border-muted/30 bg-transparent py-2 font-sans text-ink outline-none placeholder:text-muted/50 focus:border-ink"
-              />
-            </label>
-            <label className="block">
-              <span className="font-mono text-xs text-muted">Password</span>
-              <input
-                type="password"
-                required
-                minLength={6}
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 w-full border-b border-muted/30 bg-transparent py-2 font-sans text-ink outline-none focus:border-ink"
-              />
-            </label>
-
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            {message && <p className="text-sm text-ink/70">{message}</p>}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-ink py-3 font-sans text-sm text-canvas disabled:opacity-50"
-            >
-              {loading ? "…" : "Sign in"}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleWaitlist} className="mt-8 space-y-4">
-            <p className="font-sans text-sm leading-relaxed text-muted">
-              Obsessions is invite-only for now. Leave your email and we will let you know when
-              you can get in.
-            </p>
-            <label className="block">
-              <span className="font-mono text-xs text-muted">Email</span>
-              <input
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full border-b border-muted/30 bg-transparent py-2 font-sans text-ink outline-none placeholder:text-muted/50 focus:border-ink"
-              />
-            </label>
-            <input
-              type="text"
-              name="website"
-              value={website}
-              onChange={(e) => setWebsite(e.target.value)}
-              className="hidden"
-              tabIndex={-1}
-              autoComplete="off"
-              aria-hidden
-            />
-
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            {message && <p className="text-sm text-ink/70">{message}</p>}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-ink py-3 font-sans text-sm text-canvas disabled:opacity-50"
-            >
-              {loading ? "…" : "Join waitlist"}
-            </button>
-          </form>
-        )}
-
-        {tab === "signin" && (
-          <p className="mt-6 font-sans text-xs text-muted">
-            No account yet?{" "}
             <button
               type="button"
-              onClick={() => {
-                setTab("waitlist");
-                setError(null);
-                setMessage(null);
-              }}
-              className="text-ink underline-offset-2 hover:underline"
+              role="tab"
+              id="tab-signin"
+              aria-selected={tab === "signin"}
+              aria-controls="panel-signin"
+              onClick={() => switchTab("signin")}
+              className={`pb-2 transition ${
+                tab === "signin"
+                  ? "border-b-2 border-blush-400 text-blush-500"
+                  : "text-gray-400 hover:text-blush-400"
+              }`}
             >
-              Join the waitlist
+              Sign in
             </button>
-          </p>
-        )}
+            <button
+              type="button"
+              role="tab"
+              id="tab-waitlist"
+              aria-selected={tab === "waitlist"}
+              aria-controls="panel-waitlist"
+              onClick={() => switchTab("waitlist")}
+              className={`pb-2 transition ${
+                tab === "waitlist"
+                  ? "border-b-2 border-blush-400 text-blush-500"
+                  : "text-gray-400 hover:text-blush-400"
+              }`}
+            >
+              Waitlist
+            </button>
+          </div>
 
-        <p className="mt-8 font-mono text-[10px] text-muted/70">
-          <a href="/skills" className="hover:text-muted">
-            AI &amp; developer manifest →
-          </a>
-        </p>
-      </div>
+          <div className="mt-5">
+            {tab === "signin" ? (
+              <div
+                role="tabpanel"
+                id="panel-signin"
+                aria-labelledby="tab-signin"
+              >
+                <SignInForm
+                  email={email}
+                  setEmail={setEmail}
+                  password={password}
+                  setPassword={setPassword}
+                  loading={loading}
+                  error={error}
+                  message={message}
+                  onSubmit={handleSignIn}
+                  onJoinWaitlist={() => switchTab("waitlist")}
+                />
+              </div>
+            ) : (
+              <div
+                role="tabpanel"
+                id="panel-waitlist"
+                aria-labelledby="tab-waitlist"
+              >
+                <WaitlistForm
+                  email={email}
+                  setEmail={setEmail}
+                  website={website}
+                  setWebsite={setWebsite}
+                  loading={loading}
+                  error={error}
+                  message={message}
+                  onSubmit={handleWaitlist}
+                />
+              </div>
+            )}
+          </div>
+        </section>
+
+        <LoginTrustBar />
+      </LoginCard>
+
+      <p className="mt-6 text-[10px] text-blush-300">
+        <a href="/skills" className="hover:text-blush-500">
+          AI &amp; developer manifest →
+        </a>
+      </p>
     </div>
   );
 }
