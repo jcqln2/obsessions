@@ -1,7 +1,26 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { getCollageBounds } from "./collage";
 import { buildTimelineMarkers, entryHeight, fetchEntries } from "./entries";
-import type { Entry } from "./types";
+import type { CollageItemRecord, Entry } from "./types";
+
+function mockImageItem(overrides: Partial<CollageItemRecord> = {}): CollageItemRecord {
+  return {
+    id: "img-1",
+    entry_id: "entry-1",
+    item_type: "image",
+    image_url: "https://example.com/a.png",
+    storage_path: "user/a.png",
+    position_x: 0,
+    position_y: 0,
+    rotation_degrees: 0,
+    scale_factor: 1,
+    width_px: 180,
+    height_px: 120,
+    z_index: 0,
+    created_at: "2026-05-17T12:00:00.000Z",
+    ...overrides,
+  } as CollageItemRecord;
+}
 
 function mockEntry(overrides: Partial<Entry> = {}): Entry {
   return {
@@ -11,22 +30,7 @@ function mockEntry(overrides: Partial<Entry> = {}): Entry {
     notes: null,
     created_at: "2026-05-17T12:00:00.000Z",
     updated_at: "2026-05-17T12:00:00.000Z",
-    images: [
-      {
-        id: "img-1",
-        entry_id: "entry-1",
-        image_url: "https://example.com/a.png",
-        storage_path: "user/a.png",
-        position_x: 0,
-        position_y: 0,
-        rotation_degrees: 0,
-        scale_factor: 1,
-        width_px: 180,
-        height_px: 120,
-        z_index: 0,
-        created_at: "2026-05-17T12:00:00.000Z",
-      },
-    ],
+    items: [mockImageItem()],
     ...overrides,
   };
 }
@@ -39,14 +43,14 @@ describe("entries", () => {
   it("entryHeight includes collage height plus padding", () => {
     const entry = mockEntry();
     const { height: collageH } = getCollageBounds(
-      entry.images.map((img) => ({
-        x: img.position_x,
-        y: img.position_y,
-        rotation: img.rotation_degrees,
-        scale: img.scale_factor,
-        width: img.width_px,
-        height: img.height_px,
-        zIndex: img.z_index,
+      entry.items.map((item) => ({
+        x: item.position_x,
+        y: item.position_y,
+        rotation: item.rotation_degrees,
+        scale: item.scale_factor,
+        width: item.width_px,
+        height: item.height_px,
+        zIndex: item.z_index,
       }))
     );
     expect(entryHeight(entry)).toBe(collageH + 120);

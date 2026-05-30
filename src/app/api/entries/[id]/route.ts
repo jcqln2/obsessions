@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { fetchImageStoragePaths } from "@/lib/api/collage-items";
 
 export async function PATCH(
   request: Request,
@@ -56,10 +57,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: images } = await supabase
-    .from("images")
-    .select("storage_path")
-    .eq("entry_id", id);
+  const storagePaths = await fetchImageStoragePaths(supabase, id);
 
   const { error } = await supabase
     .from("entries")
@@ -71,9 +69,8 @@ export async function DELETE(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  if (images?.length) {
-    const paths = images.map((i) => i.storage_path);
-    await supabase.storage.from("entry-images").remove(paths);
+  if (storagePaths.length) {
+    await supabase.storage.from("entry-images").remove(storagePaths);
   }
 
   return NextResponse.json({ ok: true });

@@ -2,32 +2,35 @@
 
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import type { ImageRecord } from "@/lib/types";
+import type { CollageItemRecord } from "@/lib/types";
 import { formatEntryDate } from "@/lib/collage";
+import { linkDomain } from "@/lib/collage-items";
+import { PinnedLink } from "./PinnedLink";
+import { PinnedNote } from "./PinnedNote";
 
-interface ImageLightboxProps {
-  image: ImageRecord | null;
+interface ItemDetailOverlayProps {
+  item: CollageItemRecord | null;
   entryTitle?: string | null;
   entryDate?: string;
-  imageIndex?: number;
-  imageCount?: number;
+  itemIndex?: number;
+  itemCount?: number;
   onClose: () => void;
   onPrev?: () => void;
   onNext?: () => void;
 }
 
-export function ImageLightbox({
-  image,
+export function ItemDetailOverlay({
+  item,
   entryTitle,
   entryDate,
-  imageIndex,
-  imageCount,
+  itemIndex,
+  itemCount,
   onClose,
   onPrev,
   onNext,
-}: ImageLightboxProps) {
+}: ItemDetailOverlayProps) {
   useEffect(() => {
-    if (!image) return;
+    if (!item) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.stopPropagation();
@@ -44,20 +47,20 @@ export function ImageLightbox({
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [image, onClose, onPrev, onNext]);
+  }, [item, onClose, onPrev, onNext]);
 
   useEffect(() => {
-    if (image) document.body.style.overflow = "hidden";
+    if (item) document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [image]);
+  }, [item]);
 
-  const showNav = imageCount !== undefined && imageCount > 1;
+  const showNav = itemCount !== undefined && itemCount > 1;
 
   return (
     <AnimatePresence>
-      {image && (
+      {item && (
         <motion.div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-10"
           initial={{ opacity: 0 }}
@@ -83,18 +86,16 @@ export function ImageLightbox({
             {(entryTitle || entryDate) && (
               <div className="mb-4 text-center">
                 {entryTitle && (
-                  <p className="text-lg font-medium text-blush-50 md:text-xl">
-                    {entryTitle}
-                  </p>
+                  <p className="text-lg font-medium text-blush-50 md:text-xl">{entryTitle}</p>
                 )}
                 {entryDate && (
                   <p className="mt-1 font-mono text-xs text-blush-50/70">
                     {formatEntryDate(entryDate)}
                   </p>
                 )}
-                {showNav && imageIndex !== undefined && (
+                {showNav && itemIndex !== undefined && (
                   <p className="mt-1 font-mono text-[10px] text-blush-50/50">
-                    {imageIndex + 1} of {imageCount}
+                    {itemIndex + 1} of {itemCount}
                   </p>
                 )}
               </div>
@@ -106,31 +107,58 @@ export function ImageLightbox({
                   type="button"
                   onClick={onPrev}
                   className="hidden shrink-0 px-2 py-4 font-mono text-2xl text-blush-50/80 transition hover:text-blush-50 md:block"
-                  aria-label="Previous image"
+                  aria-label="Previous item"
                 >
                   ‹
                 </button>
               )}
 
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={image.image_url}
-                alt={entryTitle ? `From ${entryTitle}` : "Obsession image"}
-                className="max-h-[75vh] max-w-[min(92vw,900px)] object-contain shadow-scrap"
-                draggable={false}
-              />
+              {item.item_type === "image" && (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={item.image_url}
+                  alt={entryTitle ? `From ${entryTitle}` : "Collage image"}
+                  className="max-h-[75vh] max-w-[min(92vw,900px)] object-contain shadow-scrap"
+                  draggable={false}
+                />
+              )}
+
+              {item.item_type === "note" && (
+                <div className="w-[min(92vw,360px)]">
+                  <PinnedNote text={item.text_content} compact={false} />
+                </div>
+              )}
+
+              {item.item_type === "link" && (
+                <div className="w-[min(92vw,360px)] space-y-4">
+                  <PinnedLink url={item.link_url} label={item.link_label} compact={false} />
+                  <p className="text-center font-mono text-xs text-blush-50/70">{item.link_url}</p>
+                  <a
+                    href={item.link_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block rounded-lg bg-blush-400 px-5 py-2.5 text-center text-sm font-medium text-blush-50 hover:bg-blush-500"
+                  >
+                    Open link
+                  </a>
+                </div>
+              )}
 
               {showNav && onNext && (
                 <button
                   type="button"
                   onClick={onNext}
                   className="hidden shrink-0 px-2 py-4 font-mono text-2xl text-blush-50/80 transition hover:text-blush-50 md:block"
-                  aria-label="Next image"
+                  aria-label="Next item"
                 >
                   ›
                 </button>
               )}
             </div>
+
+            {item.item_type === "link" && (
+              <p className="mt-2 font-mono text-[10px] text-blush-50/50">{linkDomain(item.link_url)}</p>
+            )}
 
             <button
               type="button"

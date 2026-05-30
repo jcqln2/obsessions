@@ -1,5 +1,5 @@
 import { getCollageBounds } from "./collage";
-import type { Entry, ImageRecord } from "./types";
+import type { CollageItemRecord, CreateCollageItemPayload, Entry } from "./types";
 
 export async function fetchEntries(): Promise<Entry[]> {
   const res = await fetch("/api/entries", { cache: "no-store", credentials: "include" });
@@ -14,17 +14,7 @@ export async function fetchEntries(): Promise<Entry[]> {
 export async function createEntry(payload: {
   title?: string;
   createdAt?: string;
-  images: {
-    storagePath: string;
-    imageUrl: string;
-    position_x: number;
-    position_y: number;
-    rotation_degrees: number;
-    scale_factor: number;
-    width_px: number;
-    height_px: number;
-    z_index: number;
-  }[];
+  items: CreateCollageItemPayload[];
 }): Promise<Entry> {
   const res = await fetch("/api/entries", {
     method: "POST",
@@ -64,24 +54,23 @@ export async function updateEntry(
 
 export function entryHeight(entry: Entry): number {
   const headerBlock = 120;
-  const notesBlock = entry.notes ? 64 : 0;
 
-  if (!entry.images.length) {
-    return 280 + headerBlock + notesBlock;
+  if (!entry.items.length) {
+    return 280 + headerBlock;
   }
 
-  const placements = entry.images.map((img) => ({
-    x: img.position_x,
-    y: img.position_y,
-    rotation: img.rotation_degrees,
-    scale: img.scale_factor,
-    width: img.width_px,
-    height: img.height_px,
-    zIndex: img.z_index,
+  const placements = entry.items.map((item) => ({
+    x: item.position_x,
+    y: item.position_y,
+    rotation: item.rotation_degrees,
+    scale: item.scale_factor,
+    width: item.width_px,
+    height: item.height_px,
+    zIndex: item.z_index,
   }));
 
   const { height: collageH } = getCollageBounds(placements);
-  return collageH + headerBlock + notesBlock;
+  return collageH + headerBlock;
 }
 
 export function buildTimelineMarkers(
@@ -109,4 +98,4 @@ export function buildTimelineMarkers(
   return markers;
 }
 
-export type { ImageRecord };
+export type { CollageItemRecord };
