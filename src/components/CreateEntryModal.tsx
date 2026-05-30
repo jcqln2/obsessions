@@ -241,7 +241,7 @@ export function CreateEntryModal({
               <input
                 ref={inputRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp,image/gif"
                 multiple
                 className="hidden"
                 onChange={(e) => e.target.files && addFiles(e.target.files)}

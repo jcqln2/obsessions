@@ -1,15 +1,27 @@
 import { createClient } from "@/lib/supabase/client";
+import {
+  extensionForMime,
+  MAX_UPLOADS_PER_BATCH,
+  validateUploadFile,
+} from "@/lib/security/upload-limits";
 import { v4 as uuid } from "uuid";
 
 export async function uploadEntryImages(
   files: File[],
   userId: string
 ): Promise<{ storagePath: string; imageUrl: string }[]> {
+  if (files.length > MAX_UPLOADS_PER_BATCH) {
+    throw new Error(`Maximum ${MAX_UPLOADS_PER_BATCH} images per upload`);
+  }
+
   const supabase = createClient();
   const results: { storagePath: string; imageUrl: string }[] = [];
 
   for (const file of files) {
-    const ext = file.name.split(".").pop() || "jpg";
+    const validationError = validateUploadFile(file);
+    if (validationError) throw new Error(validationError);
+
+    const ext = extensionForMime(file.type);
     const path = `${userId}/${uuid()}.${ext}`;
 
     const { error } = await supabase.storage
@@ -17,7 +29,7 @@ export async function uploadEntryImages(
       .upload(path, file, {
         cacheControl: "3600",
         upsert: false,
-        contentType: file.type || "image/jpeg",
+        contentType: file.type,
       });
 
     if (error) throw new Error(error.message);
@@ -43,6 +55,11 @@ export async function uploadEntryImages(
 export function loadImageDimensions(
   file: File
 ): Promise<{ width: number; height: number; previewUrl: string }> {
+  const validationError = validateUploadFile(file);
+  if (validationError) {
+    return Promise.reject(new Error(validationError));
+  }
+
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();

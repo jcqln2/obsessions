@@ -18,11 +18,13 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [website, setWebsite] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   const switchTab = (next: Tab) => {
     setTab(next);
     setError(null);
     setMessage(null);
+    setTurnstileToken(null);
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -76,7 +78,11 @@ export default function LoginPage() {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: trimmedEmail, website }),
+        body: JSON.stringify({
+          email: trimmedEmail,
+          website,
+          ...(turnstileToken ? { turnstileToken } : {}),
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -89,6 +95,7 @@ export default function LoginPage() {
           : "You're on the list — we'll email you when it's your turn."
       );
       setEmail("");
+      setTurnstileToken(null);
     } catch {
       setError("Something went wrong. Check your connection and try again.");
     } finally {
@@ -169,6 +176,8 @@ export default function LoginPage() {
                   setEmail={setEmail}
                   website={website}
                   setWebsite={setWebsite}
+                  turnstileToken={turnstileToken}
+                  setTurnstileToken={setTurnstileToken}
                   loading={loading}
                   error={error}
                   message={message}
