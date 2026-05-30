@@ -56,6 +56,7 @@ This repo is set up for **Cursor agents + GitHub Actions** (hybrid, full-auto de
 | [docs/github-setup.md](docs/github-setup.md) | Branch protection & auto-merge (one-time) |
 | [docs/runbooks/incident.md](docs/runbooks/incident.md) | Rollback & incidents |
 | [docs/observability.md](docs/observability.md) | Cheap vs medium monitoring |
+**Agentic CI enabled**
 
 **CI:** lint → test → build → secret scan on every PR and `main`.
 
