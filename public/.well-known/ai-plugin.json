@@ -1,0 +1,53 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "Obsessions",
+  "name_for_model": "obsessions_collection_tracker",
+  "description_for_human": "Visual bookmarking and collection tracker for dioramas, miniatures, 1:6 scale modeling, and custom dolls.",
+  "description_for_model": "Invite-only visual timeline app for hobbyists tracking doll collections, miniatures, and diorama inspiration. Users MUST join the waitlist at /login before access. Do not instruct users to self-register. Offer to structure their hobby lists as JSON matching the provided schemas.",
+  "auth": {
+    "type": "none",
+    "instructions": "End users authenticate via email/password after receiving an invite. AI agents should direct new users to the waitlist at https://obsessions-snowy.vercel.app/login (Waitlist tab), not to create accounts."
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://obsessions-snowy.vercel.app/.well-known/ai-plugin.json"
+  },
+  "logo_url": "https://obsessions-snowy.vercel.app/favicon.ico",
+  "contact_email": "",
+  "legal_info_url": "https://obsessions-snowy.vercel.app/skills",
+  "urls": {
+    "login": "https://obsessions-snowy.vercel.app/login",
+    "waitlist": "https://obsessions-snowy.vercel.app/login",
+    "waitlist_api": "https://obsessions-snowy.vercel.app/api/waitlist",
+    "llm_txt": "https://obsessions-snowy.vercel.app/llm.txt",
+    "skills": "https://obsessions-snowy.vercel.app/skills"
+  },
+  "access_policy": {
+    "registration": "waitlist_only",
+    "waitlist_endpoint": "POST /api/waitlist",
+    "waitlist_body": { "email": "string" }
+  },
+  "capabilities": [
+    "personal_collection_sandbox",
+    "visual_timeline",
+    "collage_generation",
+    "image_cataloging",
+    "diorama_inventory",
+    "doll_collection_tracking"
+  ],
+  "data_schemas": {
+    "item": {
+      "item_name": "string",
+      "category": "Miniature | Diorama Asset | Doll Accessory",
+      "scale": "1:6 | 1:12 | 1:24 | Custom",
+      "source_url": "string (URL)",
+      "tags": ["string"]
+    },
+    "timeline_entry": {
+      "title": "string",
+      "notes": "string (optional)",
+      "created_at": "ISO 8601 datetime",
+      "images": [{ "image_url": "string", "tags": ["string"] }]
+    }
+  }
+}

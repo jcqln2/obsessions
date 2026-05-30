@@ -224,6 +224,12 @@ export default function LoginPage() {
             </button>
           </p>
         )}
+
+        <p className="mt-8 font-mono text-[10px] text-muted/70">
+          <a href="/skills" className="hover:text-muted">
+            AI &amp; developer manifest →
+          </a>
+        </p>
       </div>
     </div>
   );

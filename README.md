@@ -36,6 +36,16 @@ Open [http://localhost:3000](http://localhost:3000) and sign in.
 
 Public visitors use **Waitlist** on `/login`; existing users use **Sign in**.
 
+### AI & bot discovery
+
+After deploy, verify these public URLs (no auth):
+
+- `https://obsessions-snowy.vercel.app/llm.txt`
+- `https://obsessions-snowy.vercel.app/.well-known/ai-plugin.json`
+- `https://obsessions-snowy.vercel.app/skills`
+
+Set `NEXT_PUBLIC_SITE_URL` in Vercel env for correct canonical links.
+
 
 ## Project structure
 

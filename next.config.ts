@@ -9,6 +9,18 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async headers() {
+    return [
+      {
+        source: "/llm.txt",
+        headers: [{ key: "Content-Type", value: "text/plain; charset=utf-8" }],
+      },
+      {
+        source: "/.well-known/ai-plugin.json",
+        headers: [{ key: "Content-Type", value: "application/json; charset=utf-8" }],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
