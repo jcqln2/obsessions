@@ -63,7 +63,7 @@ export function EntryCard({ entry, y, onDelete, onUpdate, onItemClick }: EntryCa
   return (
     <motion.section
       layout
-      className="absolute left-4 right-16 w-full max-w-xl sm:left-auto sm:right-24 lg:right-28"
+      className="absolute left-0 right-0 w-full"
       style={{ top: y }}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
@@ -91,22 +91,24 @@ export function EntryCard({ entry, y, onDelete, onUpdate, onItemClick }: EntryCa
               }}
               disabled={saving}
               placeholder="Untitled era"
-              className="w-full rounded-lg border border-blush-300 bg-blush-50/50 py-1 text-base font-medium text-blush-700 outline-none focus:border-blush-400 md:text-lg"
+              className="w-full rounded-lg border border-blush-300 bg-blush-50/50 py-1 text-base font-medium text-blush-700 outline-none focus:border-blush-400 dark:border-stone-600 dark:bg-stone-800/50 dark:text-stone-100 dark:focus:border-stone-500 md:text-lg"
             />
           ) : (
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="text-left text-base font-medium text-blush-700 transition hover:text-blush-500 md:text-lg"
+              className="text-left text-base font-medium text-blush-700 transition hover:text-blush-500 dark:text-stone-200 dark:hover:text-stone-100 md:text-lg"
             >
               {entry.title ? (
                 entry.title
               ) : (
-                <span className="italic text-blush-400">Untitled era — click to name</span>
+                <span className="italic text-blush-400 dark:text-stone-500">
+                  Untitled era — click to name
+                </span>
               )}
             </button>
           )}
-          <div className="mt-2 space-y-0.5 font-mono text-[11px] text-blush-400">
+          <div className="mt-2 space-y-0.5 font-mono text-[11px] text-blush-400 dark:text-stone-500">
             <p>Added {formatEntryTimestamp(entry.created_at)}</p>
             <p>Modified {formatEntryTimestamp(entry.updated_at)}</p>
           </div>
@@ -116,7 +118,7 @@ export function EntryCard({ entry, y, onDelete, onUpdate, onItemClick }: EntryCa
           <button
             type="button"
             onClick={() => onDelete(entry.id)}
-            className="shrink-0 font-sans text-xs text-blush-400 transition hover:text-blush-700"
+            className="shrink-0 font-sans text-xs text-blush-400 transition hover:text-blush-700 dark:text-stone-500 dark:hover:text-stone-300"
             aria-label="Delete entry"
           >
             Remove

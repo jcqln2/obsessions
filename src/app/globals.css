@@ -3,12 +3,33 @@
 @tailwind utilities;
 
 :root {
-  /* Cool greige linen — light text on ink buttons */
-  --canvas: #eeedea;
-  --canvas-deep: #d5d3cc;
-  --canvas-highlight: #f6f6f4;
-  --canvas-shadow: #b8b6b0;
-  --ink: #2a2a2a;
+  --canvas: #f8f7f4;
+  --canvas-deep: #eeede8;
+  --canvas-highlight: #fcfcfa;
+  --canvas-shadow: #dddcd6;
+  --ink: #3a3835;
+  --app-surface: #faf9f7;
+  --app-header: rgba(250, 249, 247, 0.92);
+  --app-border: #e8e6e1;
+  --app-text: #3a3835;
+  --app-text-muted: #6f6c66;
+  --app-accent: #b85a8a;
+  --app-accent-soft: #f4c0d1;
+}
+
+.dark {
+  --canvas: #1c1b19;
+  --canvas-deep: #141312;
+  --canvas-highlight: #262524;
+  --canvas-shadow: #0e0d0c;
+  --ink: #ebeae6;
+  --app-surface: #222120;
+  --app-header: rgba(34, 33, 32, 0.92);
+  --app-border: #3d3b38;
+  --app-text: #ebeae6;
+  --app-text-muted: #a8a6a0;
+  --app-accent: #e8a0b8;
+  --app-accent-soft: #5c3d4a;
 }
 
 html {
@@ -29,74 +50,41 @@ body {
   background-color: var(--canvas-deep);
   background-image:
     radial-gradient(
-      ellipse 130% 90% at 50% -10%,
+      ellipse 120% 80% at 50% -5%,
       var(--canvas-highlight) 0%,
-      transparent 58%
+      transparent 55%
     ),
-    radial-gradient(
-      ellipse 85% 65% at 100% 100%,
-      rgba(155, 158, 165, 0.14) 0%,
-      transparent 52%
-    ),
-    radial-gradient(
-      ellipse 75% 55% at 0% 95%,
-      rgba(148, 152, 160, 0.12) 0%,
-      transparent 48%
-    ),
-    repeating-linear-gradient(
-      93deg,
-      transparent 0,
-      transparent 2px,
-      rgba(88, 90, 98, 0.026) 2px,
-      rgba(88, 90, 98, 0.026) 3px
-    ),
-    repeating-linear-gradient(
-      3deg,
-      transparent 0,
-      transparent 2px,
-      rgba(82, 85, 92, 0.02) 2px,
-      rgba(82, 85, 92, 0.02) 3px
-    ),
-    repeating-linear-gradient(
-      88deg,
-      transparent 0,
-      transparent 11px,
-      rgba(252, 252, 251, 0.07) 11px,
-      rgba(252, 252, 251, 0.07) 12px
-    ),
-    linear-gradient(
-      168deg,
-      #f5f5f3 0%,
-      #ebeae6 28%,
-      #e3e2dd 55%,
-      #dbd9d3 78%,
-      #d3d1ca 100%
-    );
+    linear-gradient(180deg, var(--canvas) 0%, var(--canvas-deep) 100%);
   background-attachment: fixed;
-  background-size:
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    5px 5px,
-    7px 7px,
-    24px 24px,
-    100% 100%;
 }
 
-/* Fine paper grain */
+.dark body {
+  background-image:
+    radial-gradient(
+      ellipse 100% 70% at 50% 0%,
+      rgba(55, 52, 48, 0.5) 0%,
+      transparent 55%
+    ),
+    linear-gradient(180deg, #1c1b19 0%, #141312 100%);
+}
+
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: 0.5;
+  opacity: 0.35;
   mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
   background-size: 180px 180px;
 }
 
-/* Soft vignette */
+.dark body::before {
+  opacity: 0.2;
+  mix-blend-mode: soft-light;
+}
+
 body::after {
   content: "";
   position: fixed;
@@ -105,8 +93,16 @@ body::after {
   pointer-events: none;
   background: radial-gradient(
     ellipse 95% 88% at 50% 45%,
-    transparent 42%,
-    rgba(100, 105, 112, 0.08) 100%
+    transparent 50%,
+    rgba(100, 105, 112, 0.05) 100%
+  );
+}
+
+.dark body::after {
+  background: radial-gradient(
+    ellipse 90% 85% at 50% 50%,
+    transparent 40%,
+    rgba(0, 0, 0, 0.25) 100%
   );
 }
 
@@ -118,64 +114,81 @@ body::after {
   background: rgba(42, 42, 42, 0.12);
 }
 
+.dark ::selection {
+  background: rgba(235, 234, 230, 0.18);
+}
+
 @layer components {
+  .text-app {
+    color: var(--app-text);
+  }
+
+  .text-app-muted {
+    color: var(--app-text-muted);
+  }
+
+  .border-app {
+    border-color: var(--app-border);
+  }
+
+  .bg-app-surface {
+    background-color: var(--app-surface);
+  }
+
+  .bg-app-header {
+    background-color: var(--app-header);
+  }
+
+  .hover\:bg-app-muted\/10:hover {
+    background-color: color-mix(in srgb, var(--app-text-muted) 10%, transparent);
+  }
+
+  .app-nav-link {
+    @apply font-sans text-sm text-blush-500 transition hover:text-blush-700 dark:text-stone-400 dark:hover:text-stone-200;
+  }
+
+  .app-nav-link-xs {
+    @apply font-sans text-xs text-blush-400 transition hover:text-blush-700 dark:text-stone-500 dark:hover:text-stone-300;
+  }
+
+  /* Timeline / main app canvas — soft off-white light, warm charcoal dark */
   .blush-canvas-bg {
     position: relative;
     isolation: isolate;
-    background-color: #fdf4f7;
+    background-color: #f8f7f4;
     background-image:
       radial-gradient(
-        ellipse 130% 90% at 50% -10%,
-        #fffafc 0%,
+        ellipse 120% 85% at 50% -8%,
+        #fcfcfa 0%,
         transparent 58%
-      ),
-      radial-gradient(
-        ellipse 85% 65% at 100% 100%,
-        rgba(237, 147, 177, 0.12) 0%,
-        transparent 52%
-      ),
-      radial-gradient(
-        ellipse 75% 55% at 0% 95%,
-        rgba(244, 192, 209, 0.14) 0%,
-        transparent 48%
-      ),
-      repeating-linear-gradient(
-        93deg,
-        transparent 0,
-        transparent 2px,
-        rgba(196, 112, 160, 0.018) 2px,
-        rgba(196, 112, 160, 0.018) 3px
-      ),
-      repeating-linear-gradient(
-        3deg,
-        transparent 0,
-        transparent 2px,
-        rgba(184, 90, 138, 0.014) 2px,
-        rgba(184, 90, 138, 0.014) 3px
       ),
       repeating-linear-gradient(
         88deg,
         transparent 0,
         transparent 11px,
-        rgba(255, 250, 252, 0.5) 11px,
-        rgba(255, 250, 252, 0.5) 12px
+        rgba(250, 249, 247, 0.6) 11px,
+        rgba(250, 249, 247, 0.6) 12px
       ),
-      linear-gradient(
-        168deg,
-        #fffafc 0%,
-        #fdf4f7 28%,
-        #f9dce8 55%,
-        #f4c0d1 78%,
-        #f0b8cc 100%
-      );
-    background-size:
-      100% 100%,
-      100% 100%,
-      100% 100%,
-      5px 5px,
-      7px 7px,
-      24px 24px,
-      100% 100%;
+      linear-gradient(168deg, #faf9f7 0%, #f5f4f0 45%, #eeede8 100%);
+    background-size: 100% 100%, 24px 24px, 100% 100%;
+  }
+
+  .dark .blush-canvas-bg {
+    background-color: #1c1b19;
+    background-image:
+      radial-gradient(
+        ellipse 100% 75% at 50% 0%,
+        rgba(45, 42, 40, 0.6) 0%,
+        transparent 55%
+      ),
+      repeating-linear-gradient(
+        88deg,
+        transparent 0,
+        transparent 11px,
+        rgba(38, 37, 36, 0.4) 11px,
+        rgba(38, 37, 36, 0.4) 12px
+      ),
+      linear-gradient(168deg, #222120 0%, #1c1b19 50%, #141312 100%);
   }
 
   .blush-canvas-bg::before {
@@ -183,10 +196,15 @@ body::after {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    opacity: 0.35;
+    opacity: 0.25;
     mix-blend-mode: multiply;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
     background-size: 180px 180px;
+  }
+
+  .dark .blush-canvas-bg::before {
+    opacity: 0.15;
+    mix-blend-mode: soft-light;
   }
 
   .blush-canvas-bg::after {
@@ -196,17 +214,32 @@ body::after {
     pointer-events: none;
     background: radial-gradient(
       ellipse 95% 88% at 50% 45%,
+      transparent 48%,
+      rgba(120, 118, 112, 0.04) 100%
+    );
+  }
+
+  .dark .blush-canvas-bg::after {
+    background: radial-gradient(
+      ellipse 90% 85% at 50% 50%,
       transparent 42%,
-      rgba(153, 53, 86, 0.06) 100%
+      rgba(0, 0, 0, 0.2) 100%
     );
   }
 
   .canvas-panel {
-    background-color: rgba(238, 237, 234, 0.92);
+    background-color: rgba(250, 249, 247, 0.92);
     backdrop-filter: blur(8px);
     box-shadow:
       0 1px 0 rgba(255, 255, 255, 0.5) inset,
-      0 12px 40px rgba(70, 75, 85, 0.07);
+      0 12px 40px rgba(70, 75, 85, 0.06);
+  }
+
+  .dark .canvas-panel {
+    background-color: rgba(34, 33, 32, 0.92);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.04) inset,
+      0 12px 40px rgba(0, 0, 0, 0.25);
   }
 
   .brand-wordmark {

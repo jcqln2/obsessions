@@ -15,6 +15,6 @@ export const metadata: Metadata = {
 
 export default function LoginLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative z-10 min-h-screen bg-blush-100">{children}</div>
+    <div className="relative z-10 min-h-screen bg-app-surface">{children}</div>
   );
 }

@@ -92,7 +92,8 @@ function mapLegacyImage(row: DbImage): CollageItemRecord {
 
 async function signImageItems(
   supabase: SupabaseClient,
-  items: CollageItemRecord[]
+  items: CollageItemRecord[],
+  signSeconds = 60 * 60 * 24
 ): Promise<CollageItemRecord[]> {
   const signed: CollageItemRecord[] = [];
   for (const item of items) {
@@ -102,7 +103,7 @@ async function signImageItems(
     }
     const { data } = await supabase.storage
       .from("entry-images")
-      .createSignedUrl(item.storage_path, 60 * 60 * 24);
+      .createSignedUrl(item.storage_path, signSeconds);
     signed.push({
       ...item,
       image_url: data?.signedUrl ?? item.image_url,
@@ -156,13 +157,14 @@ export async function fetchItemsByEntryIds(
 
 export async function fetchSignedItemsForEntries(
   supabase: SupabaseClient,
-  entryIds: string[]
+  entryIds: string[],
+  signSeconds = 60 * 60 * 24
 ): Promise<Map<string, CollageItemRecord[]>> {
   const byEntry = await fetchItemsByEntryIds(supabase, entryIds);
   const signedByEntry = new Map<string, CollageItemRecord[]>();
 
   for (const [entryId, items] of byEntry) {
-    signedByEntry.set(entryId, await signImageItems(supabase, items));
+    signedByEntry.set(entryId, await signImageItems(supabase, items, signSeconds));
   }
 
   return signedByEntry;

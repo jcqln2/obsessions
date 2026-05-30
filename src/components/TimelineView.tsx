@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EntryCard } from "./EntryCard";
 import { StudioLogo } from "./StudioLogo";
 import { TimelineScrubber } from "./TimelineScrubber";
+import { AccountSettingsModal } from "./AccountSettingsModal";
+import { ThemeToggle } from "./ThemeToggle";
 import { CreateEntryModal } from "./CreateEntryModal";
 import { QuickLinkCapture } from "./QuickLinkCapture";
 import { QuickNoteCapture } from "./QuickNoteCapture";
@@ -18,6 +20,7 @@ import {
   getPanBounds,
   wheelZoomFactor,
 } from "@/lib/timeline-viewport";
+import { TIMELINE_LANE_CLASS } from "@/lib/timeline-layout";
 import {
   DEFAULT_ZOOM,
   formatZoomPercent,
@@ -36,6 +39,7 @@ export function TimelineView() {
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [noteCaptureOpen, setNoteCaptureOpen] = useState(false);
   const [linkCaptureOpen, setLinkCaptureOpen] = useState(false);
+  const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
   const [userId, setUserId] = useState<string>("");
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewportHeight, setViewportHeight] = useState(800);
@@ -43,6 +47,7 @@ export function TimelineView() {
   const [skipTransition, setSkipTransition] = useState(false);
   const zoomTransitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pinchRef = useRef<{ distance: number } | null>(null);
+  const isPinchingRef = useRef(false);
 
   const {
     scale,
@@ -130,12 +135,19 @@ export function TimelineView() {
 
   useEffect(() => {
     const update = () => {
-      setViewportHeight(window.innerHeight);
-      setViewportWidth(window.innerWidth);
+      const vv = window.visualViewport;
+      setViewportHeight(vv?.height ?? window.innerHeight);
+      setViewportWidth(vv?.width ?? window.innerWidth);
     };
     update();
     window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
+    window.visualViewport?.addEventListener("resize", update);
+    window.visualViewport?.addEventListener("scroll", update);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.visualViewport?.removeEventListener("resize", update);
+      window.visualViewport?.removeEventListener("scroll", update);
+    };
   }, []);
 
   useEffect(() => {
@@ -221,13 +233,17 @@ export function TimelineView() {
 
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 2) {
+        isPinchingRef.current = true;
         pinchRef.current = { distance: touchDistance(e.touches) };
+        e.preventDefault();
       }
     };
 
     const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && pinchRef.current) {
+        e.preventDefault();
+      }
       if (e.touches.length !== 2 || !pinchRef.current) return;
-      e.preventDefault();
       const dist = touchDistance(e.touches);
       const factor = dist / pinchRef.current.distance;
       if (Math.abs(factor - 1) < 0.002) return;
@@ -249,11 +265,14 @@ export function TimelineView() {
       bumpZoomTransition();
     };
 
-    const onTouchEnd = () => {
-      pinchRef.current = null;
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) {
+        pinchRef.current = null;
+        isPinchingRef.current = false;
+      }
     };
 
-    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchstart", onTouchStart, { passive: false });
     el.addEventListener("touchmove", onTouchMove, { passive: false });
     el.addEventListener("touchend", onTouchEnd);
     el.addEventListener("touchcancel", onTouchEnd);
@@ -273,7 +292,13 @@ export function TimelineView() {
 
   // Space + drag pan
   const [spaceHeld, setSpaceHeld] = useState(false);
-  const dragRef = useRef<{ x: number; y: number; startPanX: number; startPanY: number } | null>(null);
+  const dragRef = useRef<{
+    x: number;
+    y: number;
+    startPanX: number;
+    startPanY: number;
+    startScrollY: number;
+  } | null>(null);
 
   useEffect(() => {
     const isTypingTarget = (target: EventTarget | null) =>
@@ -303,11 +328,13 @@ export function TimelineView() {
   }, [setIsPanning]);
 
   const canPan = scale > 1.02 || spaceHeld;
+  const showGrabCursor = canPan || spaceHeld;
 
   const onPointerDown = (e: React.PointerEvent) => {
+    if (isPinchingRef.current) return;
     const isMiddleClick = e.button === 1;
     const isLeftClick = e.button === 0;
-    if (!isMiddleClick && !(isLeftClick && canPan)) return;
+    if (!isMiddleClick && !isLeftClick) return;
 
     const target = e.target as HTMLElement;
     if (target.closest("button, a, input, textarea")) return;
@@ -321,14 +348,24 @@ export function TimelineView() {
       y: e.clientY,
       startPanX: panX,
       startPanY: panY,
+      startScrollY: scrollY,
     };
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
-    if (!dragRef.current) return;
+    if (!dragRef.current || isPinchingRef.current) return;
     const dx = e.clientX - dragRef.current.x;
     const dy = e.clientY - dragRef.current.y;
     applyPan(dragRef.current.startPanX + dx, dragRef.current.startPanY + dy);
+    setScrollY(
+      clampScroll(
+        dragRef.current.startScrollY - dy,
+        viewportWidth,
+        viewportHeight,
+        totalHeight,
+        scale
+      )
+    );
   };
 
   const onPointerUp = () => {
@@ -424,41 +461,33 @@ export function TimelineView() {
   };
 
   return (
-    <div className="relative h-screen w-full overflow-hidden">
+    <div className="relative h-[100dvh] w-full overflow-hidden overscroll-none">
       <div className="blush-canvas-bg pointer-events-none fixed inset-0 z-0" aria-hidden />
 
-      <header className="fixed left-0 right-0 top-0 z-30 flex items-center justify-between border-b border-blush-200 bg-blush-100/90 px-6 py-4 backdrop-blur-sm">
+      <header className="fixed left-0 right-0 top-0 z-30 flex items-center justify-between border-b border-app bg-app-header px-6 py-4 backdrop-blur-sm">
         <StudioLogo />
-        <div className="flex items-center gap-3 sm:gap-4">
-          <button
-            type="button"
-            onClick={() => setNoteCaptureOpen(true)}
-            className="font-sans text-sm text-blush-500 hover:text-blush-700"
-          >
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button type="button" onClick={() => setNoteCaptureOpen(true)} className="app-nav-link">
             + Note
           </button>
-          <button
-            type="button"
-            onClick={() => setLinkCaptureOpen(true)}
-            className="font-sans text-sm text-blush-500 hover:text-blush-700"
-          >
+          <button type="button" onClick={() => setLinkCaptureOpen(true)} className="app-nav-link">
             + Link
           </button>
           <button
             type="button"
             onClick={() => setImageModalOpen(true)}
-            className="font-sans text-sm text-blush-500 underline-offset-4 hover:text-blush-700 hover:underline"
+            className="app-nav-link underline-offset-4 hover:underline"
           >
             + Images
           </button>
-          <div className="hidden items-center gap-0.5 rounded-lg bg-blush-50 px-1 sm:flex">
+          <div className="hidden items-center gap-0.5 rounded-lg bg-blush-50 px-1 dark:bg-stone-800/60 sm:flex">
             <button
               type="button"
               onClick={() => {
                 zoomOut(zoomContext(viewportWidth / 2, viewportHeight / 2));
                 bumpZoomTransition();
               }}
-              className="flex h-8 w-8 items-center justify-center font-mono text-sm text-blush-400 hover:text-blush-700"
+              className="flex h-8 w-8 items-center justify-center font-mono text-sm text-app-muted hover:text-app"
               aria-label="Zoom out"
             >
               −
@@ -466,7 +495,7 @@ export function TimelineView() {
             <button
               type="button"
               onClick={resetView}
-              className="min-w-[3.25rem] px-1 font-mono text-xs text-blush-400 hover:text-blush-700"
+              className="min-w-[3.25rem] px-1 font-mono text-xs text-app-muted hover:text-app"
               title="Reset zoom (R)"
             >
               {formatZoomPercent(scale)}%
@@ -477,17 +506,21 @@ export function TimelineView() {
                 zoomIn(zoomContext(viewportWidth / 2, viewportHeight / 2));
                 bumpZoomTransition();
               }}
-              className="flex h-8 w-8 items-center justify-center font-mono text-sm text-blush-400 hover:text-blush-700"
+              className="flex h-8 w-8 items-center justify-center font-mono text-sm text-app-muted hover:text-app"
               aria-label="Zoom in"
             >
               +
             </button>
           </div>
+          <ThemeToggle />
           <button
             type="button"
-            onClick={handleSignOut}
-            className="font-sans text-xs text-blush-400 hover:text-blush-700"
+            onClick={() => setAccountSettingsOpen(true)}
+            className="app-nav-link-xs"
           >
+            Account
+          </button>
+          <button type="button" onClick={handleSignOut} className="app-nav-link-xs">
             Sign out
           </button>
         </div>
@@ -495,12 +528,13 @@ export function TimelineView() {
 
       <div
         ref={containerRef}
-        className={`relative z-10 h-full w-full touch-none ${
-          isPanning ? "cursor-grabbing" : canPan ? "cursor-grab" : ""
+        className={`relative z-10 h-full w-full select-none [touch-action:none] ${
+          isPanning ? "cursor-grabbing" : showGrabCursor ? "cursor-grab" : ""
         }`}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
         onPointerLeave={onPointerUp}
       >
         <div
@@ -513,24 +547,25 @@ export function TimelineView() {
             willChange: "transform",
           }}
         >
+          <div className={TIMELINE_LANE_CLASS} style={{ height: totalHeight }}>
           {loading && (
-            <p className="absolute right-16 top-40 font-sans text-blush-500 sm:right-24 lg:right-28">
+            <p className="absolute left-0 right-0 top-40 font-sans text-app-muted">
               Loading your archive…
             </p>
           )}
 
           {loadError && (
-            <div className="absolute right-16 top-40 w-full max-w-md text-left sm:right-24 lg:right-28">
+            <div className="absolute left-0 right-0 top-40 w-full text-left">
               <p className="font-sans text-sm text-red-600">{loadError}</p>
-              <p className="mt-2 font-sans text-xs text-blush-500">
-                Run <code className="text-blush-700">001_schema.sql</code> and{" "}
-                <code className="text-blush-700">002_api_grants.sql</code> in Supabase SQL Editor,
-                then refresh.
+              <p className="mt-2 font-sans text-xs text-app-muted">
+                Run <code className="text-app">001_schema.sql</code> and{" "}
+                <code className="text-app">002_api_grants.sql</code> in Supabase SQL Editor, then
+                refresh.
               </p>
               <button
                 type="button"
                 onClick={load}
-                className="mt-4 font-sans text-sm text-blush-500 underline hover:text-blush-700"
+                className="mt-4 font-sans text-sm text-app-muted underline hover:text-app"
               >
                 Try again
               </button>
@@ -538,9 +573,9 @@ export function TimelineView() {
           )}
 
           {!loading && !loadError && entries.length === 0 && (
-            <div className="absolute right-16 top-40 w-full max-w-md text-left sm:right-24 lg:right-28">
-              <p className="text-base font-medium text-blush-700">Your timeline is empty</p>
-              <p className="mt-2 font-sans text-sm text-blush-500">
+            <div className="absolute left-0 right-0 top-40 w-full text-left">
+              <p className="text-base font-medium text-app">Your timeline is empty</p>
+              <p className="mt-2 font-sans text-sm text-app-muted">
                 Pin a note, save a link, or drop images to start your collage.
               </p>
               <div className="mt-6 flex flex-wrap gap-2">
@@ -561,7 +596,7 @@ export function TimelineView() {
                 <button
                   type="button"
                   onClick={() => setImageModalOpen(true)}
-                  className="rounded-lg border border-blush-300 px-4 py-2.5 font-sans text-sm font-medium text-blush-600 hover:border-blush-400"
+                  className="rounded-lg border border-blush-300 px-4 py-2.5 font-sans text-sm font-medium text-blush-600 hover:border-blush-400 dark:border-stone-600 dark:text-stone-300 dark:hover:border-stone-500"
                 >
                   + Images
                 </button>
@@ -579,6 +614,7 @@ export function TimelineView() {
               onItemClick={(_item, element) => focusOnElement(element)}
             />
           ))}
+          </div>
         </div>
       </div>
 
@@ -592,8 +628,11 @@ export function TimelineView() {
         onJump={setScrollY}
       />
 
-      <footer className="fixed bottom-4 left-6 z-30 hidden font-mono text-[10px] text-blush-300 sm:block">
-        Scroll · pinch or ⌘+scroll to zoom · drag to pan · R to reset
+      <footer className="pointer-events-none fixed bottom-4 left-4 right-4 z-30 text-center font-mono text-[10px] text-app-muted sm:left-6 sm:right-auto sm:text-left">
+        <span className="sm:hidden">Swipe to scroll · pinch to zoom</span>
+        <span className="hidden sm:inline">
+          Scroll · pinch or ⌘+scroll to zoom · drag to pan · R to reset
+        </span>
       </footer>
 
       {userId && (
@@ -616,6 +655,11 @@ export function TimelineView() {
           />
         </>
       )}
+
+      <AccountSettingsModal
+        open={accountSettingsOpen}
+        onClose={() => setAccountSettingsOpen(false)}
+      />
     </div>
   );
 }

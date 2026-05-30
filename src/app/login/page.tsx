@@ -6,6 +6,7 @@ import { LoginCard } from "./LoginCard";
 import { LoginHero } from "./LoginHero";
 import { LoginTrustBar } from "./LoginTrustBar";
 import { SignInForm } from "./SignInForm";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { WaitlistForm } from "./WaitlistForm";
 
 type Tab = "signin" | "waitlist";
@@ -104,7 +105,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-8">
+    <div className="relative flex min-h-screen flex-col items-center justify-center px-4 py-8">
+      <div className="absolute right-4 top-4 z-20">
+        <ThemeToggle size="md" />
+      </div>
       <LoginCard>
         <LoginHero />
 

@@ -35,6 +35,21 @@ Free tier: 500K commands/month — sufficient for beta.
 | `GET /api/entries` | 120 / minute / user |
 | `POST /api/entries` | 30 / hour / user, 50 entries / day |
 | `PATCH` / `DELETE /api/entries/[id]` | 60 / hour / user |
+| `GET /api/account/export` | 5 / hour / user |
+| `POST /api/account/delete` | 3 / hour / user |
+
+## Account export & deletion
+
+- **Export:** Timeline header → **Account** → **Download JSON** (`GET /api/account/export`). Includes entries, collage items, and signed image URLs (7-day expiry).
+- **Delete:** Type `delete my account` to confirm. Removes storage objects, entries, waitlist row (if any), and the Supabase auth user.
+
+Requires **server-only** key on Vercel (never expose to the client):
+
+```
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+Get it from Supabase Dashboard → Project Settings → API → `service_role` secret.
 
 ## Other controls (no extra env)
 
