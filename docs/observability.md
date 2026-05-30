@@ -22,8 +22,11 @@ Obsessions uses the **cheap tier** by default. Upgrade when traffic or complexit
 
 1. Create project at [sentry.io](https://sentry.io) → Next.js
 2. Install: `npx @sentry/wizard@latest -i nextjs`
-3. Add `SENTRY_DSN` to Vercel env (do not commit DSN to public repos if concerned — use Vercel only)
-4. Update `AGENTS.md` if agents must not touch `sentry.*.config`
+3. Add `SENTRY_AUTH_TOKEN` (source map uploads at build time):
+   - **GitHub** → repo Settings → Secrets → Actions → `SENTRY_AUTH_TOKEN` (value is the token only, no `KEY=` prefix)
+   - **Vercel** → Project → Environment Variables → `SENTRY_AUTH_TOKEN` (Production + Preview)
+   - Local builds use `.env.sentry-build-plugin` (gitignored — do not commit)
+4. Verify: deploy, then visit `/sentry-example-page` and confirm the test error appears in Sentry Issues
 
 Free tier: 5k errors/month — sufficient for beta.
 
