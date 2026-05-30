@@ -1,12 +1,14 @@
 /**
- * Smoke test: /login waitlist UI (Turnstile widget present when configured at build time).
+ * Smoke test: /login waitlist UI + server-side Turnstile enforcement.
+ *
+ * Turnstile loads client-side (not in initial HTML), so we verify the API rejects
+ * requests without a captcha token when TURNSTILE_SECRET_KEY is set on the server.
  *
  * Run: k6 run tests/k6/waitlist-smoke.js
- *      BASE_URL=https://obsessions-snowy.vercel.app k6 run tests/k6/waitlist-smoke.js
  */
 import http from "k6/http";
 import { check } from "k6";
-import { BASE_URL } from "./lib.js";
+import { BASE_URL, parseJson, postWaitlist } from "./lib.js";
 
 export const options = {
   vus: 1,
@@ -18,20 +20,30 @@ export const options = {
 };
 
 export default function () {
-  const res = http.get(`${BASE_URL}/login`, {
+  const pageRes = http.get(`${BASE_URL}/login`, {
     tags: { name: "login_page" },
   });
 
-  check(res, {
+  check(pageRes, {
     "login page status 200": (r) => r.status === 200,
     "waitlist tab copy present": (r) =>
       r.body.includes("Waitlist") || r.body.includes("waitlist"),
     "join waitlist CTA present": (r) =>
       r.body.includes("Join waitlist") || r.body.includes("join waitlist"),
-    // Turnstile: widget script or site key baked into Next.js bundle when env is set
-    "turnstile integration present": (r) =>
-      r.body.includes("challenges.cloudflare.com") ||
-      r.body.includes("turnstile") ||
-      r.body.includes("Turnstile"),
+  });
+
+  const email = `k6-smoke-${Date.now()}@loadtest.invalid`;
+  const req = postWaitlist(email);
+  const apiRes = http.post(req.url, req.body, {
+    headers: req.headers,
+    tags: { name: "waitlist_captcha_check" },
+  });
+  const body = parseJson(apiRes);
+
+  check(apiRes, {
+    "turnstile enforced without token": (r) =>
+      r.status === 400 &&
+      typeof body?.error === "string" &&
+      body.error.toLowerCase().includes("captcha"),
   });
 }
