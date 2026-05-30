@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { fetchImageStoragePaths } from "@/lib/api/collage-items";
+import { rateLimit, tooManyRequestsResponse } from "@/lib/security/rate-limit";
 
 export async function PATCH(
   request: Request,
@@ -14,6 +15,11 @@ export async function PATCH(
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const limit = await rateLimit(`entries-mutate:${user.id}`, "entries-mutate", 60, "1 h");
+  if (!limit.success) {
+    return tooManyRequestsResponse(limit);
   }
 
   const body = await request.json();
@@ -55,6 +61,11 @@ export async function DELETE(
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const limit = await rateLimit(`entries-mutate:${user.id}`, "entries-mutate", 60, "1 h");
+  if (!limit.success) {
+    return tooManyRequestsResponse(limit);
   }
 
   const storagePaths = await fetchImageStoragePaths(supabase, id);

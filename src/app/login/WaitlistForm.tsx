@@ -1,12 +1,17 @@
 "use client";
 
+import { Turnstile } from "@marsidev/react-turnstile";
 import { Mail } from "lucide-react";
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
 type WaitlistFormProps = {
   email: string;
   setEmail: (value: string) => void;
   website: string;
   setWebsite: (value: string) => void;
+  turnstileToken: string | null;
+  setTurnstileToken: (value: string | null) => void;
   loading: boolean;
   error: string | null;
   message: string | null;
@@ -18,11 +23,16 @@ export function WaitlistForm({
   setEmail,
   website,
   setWebsite,
+  turnstileToken,
+  setTurnstileToken,
   loading,
   error,
   message,
   onSubmit,
 }: WaitlistFormProps) {
+  const captchaRequired = Boolean(TURNSTILE_SITE_KEY);
+  const canSubmit = !captchaRequired || Boolean(turnstileToken);
+
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <p className="text-sm leading-relaxed text-blush-500">
@@ -62,12 +72,24 @@ export function WaitlistForm({
         aria-hidden
       />
 
+      {captchaRequired && TURNSTILE_SITE_KEY && (
+        <div className="flex justify-center">
+          <Turnstile
+            siteKey={TURNSTILE_SITE_KEY}
+            onSuccess={setTurnstileToken}
+            onExpire={() => setTurnstileToken(null)}
+            onError={() => setTurnstileToken(null)}
+            options={{ theme: "light", size: "normal" }}
+          />
+        </div>
+      )}
+
       {error && <p className="text-sm text-red-600">{error}</p>}
       {message && <p className="text-sm text-blush-700">{message}</p>}
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || !canSubmit}
         className="h-[42px] w-full rounded-lg bg-blush-400 text-sm font-medium text-blush-50 disabled:opacity-50"
       >
         {loading ? "…" : "Join waitlist"}

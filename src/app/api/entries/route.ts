@@ -9,6 +9,13 @@ import {
   validateNoteText,
 } from "@/lib/collage-items";
 import { fetchSignedItemsForEntries } from "@/lib/api/collage-items";
+import { MAX_ENTRIES_PER_DAY, startOfUtcDay } from "@/lib/security/quotas";
+import {
+  rateLimit,
+  rateLimitHeaders,
+  tooManyRequestsResponse,
+} from "@/lib/security/rate-limit";
+import { validateImageStoragePaths } from "@/lib/security/storage-path";
 import type { CollageItemRecord, CreateCollageItemPayload, Entry } from "@/lib/types";
 
 function layoutFields(item: CreateCollageItemPayload) {
@@ -100,6 +107,11 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const limit = await rateLimit(`entries-get:${user.id}`, "entries-get", 120, "1 m");
+  if (!limit.success) {
+    return tooManyRequestsResponse(limit);
+  }
+
   const { data: entries, error } = await supabase
     .from("entries")
     .select("*")
@@ -122,7 +134,7 @@ export async function GET() {
       ...e,
       items: byEntry.get(e.id) ?? [],
     }));
-    return NextResponse.json(result);
+    return NextResponse.json(result, { headers: rateLimitHeaders(limit) });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to load items";
     console.error("[GET /api/entries] items:", message);
@@ -140,6 +152,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const limit = await rateLimit(`entries-post:${user.id}`, "entries-post", 30, "1 h");
+  if (!limit.success) {
+    return tooManyRequestsResponse(limit);
+  }
+
   const body = await request.json();
   const { title, createdAt, items } = body as {
     title?: string;
@@ -150,6 +167,30 @@ export async function POST(request: Request) {
   const validationError = validateItems(items);
   if (validationError) {
     return NextResponse.json({ error: validationError }, { status: 400 });
+  }
+
+  const storageError = validateImageStoragePaths(items, user.id);
+  if (storageError) {
+    return NextResponse.json({ error: storageError }, { status: 400 });
+  }
+
+  const dayStart = startOfUtcDay();
+  const { count: entriesToday, error: countError } = await supabase
+    .from("entries")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .gte("created_at", dayStart);
+
+  if (countError) {
+    console.error("[POST /api/entries] quota count:", countError.message);
+    return NextResponse.json({ error: "Could not verify quota" }, { status: 500 });
+  }
+
+  if ((entriesToday ?? 0) >= MAX_ENTRIES_PER_DAY) {
+    return NextResponse.json(
+      { error: `Daily limit of ${MAX_ENTRIES_PER_DAY} entries reached. Try again tomorrow.` },
+      { status: 429 }
+    );
   }
 
   const { data: entry, error } = await supabase
@@ -226,5 +267,5 @@ export async function POST(request: Request) {
     items: (insertedItems ?? []) as CollageItemRecord[],
   };
 
-  return NextResponse.json(result);
+  return NextResponse.json(result, { headers: rateLimitHeaders(limit) });
 }

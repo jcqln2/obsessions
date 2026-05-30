@@ -45,3 +45,7 @@ Free tier: 5k errors/month — sufficient for beta.
 ## Incident response
 
 See [runbooks/incident.md](./runbooks/incident.md).
+
+## Security (GA hardening)
+
+See [security.md](./security.md) for Turnstile, Upstash rate limiting, and verification steps.
