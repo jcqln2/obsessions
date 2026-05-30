@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "test:k6:waitlist-smoke": "k6 run tests/k6/waitlist-smoke.js",
+    "test:k6:waitlist-rate-limit": "k6 run tests/k6/waitlist-rate-limit.js"
   },
   "dependencies": {
     "@marsidev/react-turnstile": "^1.5.2",

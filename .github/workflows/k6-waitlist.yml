@@ -1,0 +1,36 @@
+name: k6 waitlist smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: Site URL to test
+        required: false
+        default: https://obsessions-snowy.vercel.app
+      run_rate_limit:
+        description: Run 10-concurrent rate-limit test (consumes waitlist quota for runner IP)
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  k6-waitlist:
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ github.event.inputs.site_url || 'https://obsessions-snowy.vercel.app' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Smoke — login page & Turnstile
+        run: k6 run tests/k6/waitlist-smoke.js
+
+      - name: Rate limit — 10 concurrent POST /api/waitlist
+        if: ${{ github.event.inputs.run_rate_limit }}
+        run: k6 run tests/k6/waitlist-rate-limit.js
+
+      - name: Summary
+        run: |
+          echo "k6 waitlist tests passed for $BASE_URL"
