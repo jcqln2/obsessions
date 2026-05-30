@@ -137,25 +137,27 @@ export function CreateEntryModal({
         >
           <button
             type="button"
-            className="absolute inset-0 bg-ink/20 backdrop-blur-sm"
+            className="absolute inset-0 bg-blush-700/30 backdrop-blur-sm"
             onClick={handleClose}
             aria-label="Close"
           />
           <motion.div
-            className="canvas-panel relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-sm p-6"
+            className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-blush-50 p-6 shadow-[0_4px_24px_rgba(153,53,86,0.08)]"
             initial={{ scale: 0.96, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.96, opacity: 0 }}
             transition={{ duration: 0.25 }}
           >
-            <h2 className="font-serif text-xl font-medium text-ink">Current obsession</h2>
-            <p className="mt-1 font-sans text-sm text-muted">
+            <h2 className="text-base font-medium text-blush-700">Current obsession</h2>
+            <p className="mt-1 font-sans text-sm text-blush-500">
               Drop 1–8 screenshots. We&apos;ll scatter them into a collage.
             </p>
 
             <div
-              className={`mt-6 cursor-pointer border border-dashed px-4 py-10 text-center transition ${
-                dragOver ? "border-ink bg-ink/5" : "border-muted/40 hover:border-muted"
+              className={`mt-6 cursor-pointer rounded-lg border border-dashed px-4 py-10 text-center transition ${
+                dragOver
+                  ? "border-blush-400 bg-blush-100"
+                  : "border-blush-300 bg-blush-100 hover:border-blush-400"
               }`}
               onDragOver={(e) => {
                 e.preventDefault();
@@ -172,10 +174,10 @@ export function CreateEntryModal({
               tabIndex={0}
               onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
             >
-              <p className="font-sans text-sm text-muted">
+              <p className="font-sans text-sm text-blush-500">
                 Drag & drop images here, or click to browse
               </p>
-              <p className="mt-1 font-mono text-xs text-muted/70">
+              <p className="mt-1 font-mono text-xs text-blush-400">
                 {files.length}/8 selected
               </p>
               <input
@@ -195,7 +197,7 @@ export function CreateEntryModal({
             )}
 
             <label className="mt-6 block">
-              <span className="font-mono text-xs uppercase tracking-wide text-muted">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-blush-400">
                 Title (optional)
               </span>
               <input
@@ -204,7 +206,7 @@ export function CreateEntryModal({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="pink techwear era"
-                className="mt-2 w-full border-b border-muted/30 bg-transparent py-2 font-serif text-base text-ink outline-none focus:border-ink"
+                className="mt-1 h-[42px] w-full rounded-lg border border-blush-300 bg-blush-100 px-3 text-sm text-blush-700 outline-none placeholder:text-blush-300 focus:border-blush-400"
               />
             </label>
 
@@ -217,14 +219,14 @@ export function CreateEntryModal({
                 type="button"
                 onClick={handleSave}
                 disabled={saving || files.length < 1}
-                className="flex-1 bg-ink py-3 font-sans text-sm text-canvas transition hover:bg-ink/90 disabled:opacity-40"
+                className="h-[42px] flex-1 rounded-lg bg-blush-400 font-sans text-sm font-medium text-blush-50 transition hover:bg-blush-500 disabled:opacity-40"
               >
                 {saving ? "Saving…" : "Save to timeline"}
               </button>
               <button
                 type="button"
                 onClick={handleClose}
-                className="px-4 py-3 font-sans text-sm text-muted transition hover:text-ink"
+                className="px-4 py-3 font-sans text-sm text-blush-500 transition hover:text-blush-700"
               >
                 Cancel
               </button>

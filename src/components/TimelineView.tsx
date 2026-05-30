@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EntryCard } from "./EntryCard";
+import { StudioLogo } from "./StudioLogo";
 import { TimelineScrubber } from "./TimelineScrubber";
 import { CreateEntryModal } from "./CreateEntryModal";
 import { useKeyboardNav } from "@/hooks/useKeyboardNav";
@@ -390,24 +391,26 @@ export function TimelineView() {
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
-      <header className="fixed left-0 right-0 top-0 z-30 flex items-center justify-between px-6 py-5">
-        <h1 className="brand-wordmark">Obsessions</h1>
+      <div className="blush-canvas-bg pointer-events-none fixed inset-0 z-0" aria-hidden />
+
+      <header className="fixed left-0 right-0 top-0 z-30 flex items-center justify-between border-b border-blush-200 bg-blush-100/90 px-6 py-4 backdrop-blur-sm">
+        <StudioLogo />
         <div className="flex items-center gap-4">
           <button
             type="button"
             onClick={() => setModalOpen(true)}
-            className="font-sans text-sm text-ink underline-offset-4 hover:underline"
+            className="font-sans text-sm text-blush-500 underline-offset-4 hover:text-blush-700 hover:underline"
           >
             + New entry
           </button>
-          <div className="hidden items-center gap-0.5 sm:flex">
+          <div className="hidden items-center gap-0.5 rounded-lg bg-blush-50 px-1 sm:flex">
             <button
               type="button"
               onClick={() => {
                 zoomOut(zoomContext(viewportWidth / 2, viewportHeight / 2));
                 bumpZoomTransition();
               }}
-              className="flex h-8 w-8 items-center justify-center font-mono text-sm text-muted hover:text-ink"
+              className="flex h-8 w-8 items-center justify-center font-mono text-sm text-blush-400 hover:text-blush-700"
               aria-label="Zoom out"
             >
               −
@@ -415,7 +418,7 @@ export function TimelineView() {
             <button
               type="button"
               onClick={resetView}
-              className="min-w-[3.25rem] px-1 font-mono text-xs text-muted hover:text-ink"
+              className="min-w-[3.25rem] px-1 font-mono text-xs text-blush-400 hover:text-blush-700"
               title="Reset zoom (R)"
             >
               {formatZoomPercent(scale)}%
@@ -426,7 +429,7 @@ export function TimelineView() {
                 zoomIn(zoomContext(viewportWidth / 2, viewportHeight / 2));
                 bumpZoomTransition();
               }}
-              className="flex h-8 w-8 items-center justify-center font-mono text-sm text-muted hover:text-ink"
+              className="flex h-8 w-8 items-center justify-center font-mono text-sm text-blush-400 hover:text-blush-700"
               aria-label="Zoom in"
             >
               +
@@ -435,7 +438,7 @@ export function TimelineView() {
           <button
             type="button"
             onClick={handleSignOut}
-            className="font-sans text-xs text-muted hover:text-ink"
+            className="font-sans text-xs text-blush-400 hover:text-blush-700"
           >
             Sign out
           </button>
@@ -444,7 +447,7 @@ export function TimelineView() {
 
       <div
         ref={containerRef}
-        className={`h-full w-full touch-none ${
+        className={`relative z-10 h-full w-full touch-none ${
           isPanning ? "cursor-grabbing" : canPan ? "cursor-grab" : ""
         }`}
         onPointerDown={onPointerDown}
@@ -463,7 +466,7 @@ export function TimelineView() {
           }}
         >
           {loading && (
-            <p className="absolute right-16 top-40 font-sans text-muted sm:right-24 lg:right-28">
+            <p className="absolute right-16 top-40 font-sans text-blush-500 sm:right-24 lg:right-28">
               Loading your archive…
             </p>
           )}
@@ -471,15 +474,15 @@ export function TimelineView() {
           {loadError && (
             <div className="absolute right-16 top-40 w-full max-w-md text-left sm:right-24 lg:right-28">
               <p className="font-sans text-sm text-red-600">{loadError}</p>
-              <p className="mt-2 font-sans text-xs text-muted">
-                Run <code className="text-ink">001_schema.sql</code> and{" "}
-                <code className="text-ink">002_api_grants.sql</code> in Supabase SQL Editor,
+              <p className="mt-2 font-sans text-xs text-blush-500">
+                Run <code className="text-blush-700">001_schema.sql</code> and{" "}
+                <code className="text-blush-700">002_api_grants.sql</code> in Supabase SQL Editor,
                 then refresh.
               </p>
               <button
                 type="button"
                 onClick={load}
-                className="mt-4 font-sans text-sm text-ink underline"
+                className="mt-4 font-sans text-sm text-blush-500 underline hover:text-blush-700"
               >
                 Try again
               </button>
@@ -488,14 +491,14 @@ export function TimelineView() {
 
           {!loading && !loadError && entries.length === 0 && (
             <div className="absolute right-16 top-40 w-full max-w-md text-left sm:right-24 lg:right-28">
-              <p className="font-serif text-xl font-medium text-ink">Your timeline is empty</p>
-              <p className="mt-2 font-sans text-sm text-muted">
+              <p className="text-base font-medium text-blush-700">Your timeline is empty</p>
+              <p className="mt-2 font-sans text-sm text-blush-500">
                 {`Drop a few screenshots of whatever you're obsessed with right now and we'll make a collage.`}
               </p>
               <button
                 type="button"
                 onClick={() => setModalOpen(true)}
-                className="mt-6 bg-ink px-6 py-3 font-sans text-sm text-canvas"
+                className="mt-6 rounded-lg bg-blush-400 px-6 py-3 font-sans text-sm font-medium text-blush-50 hover:bg-blush-500"
               >
                 Create first entry
               </button>
@@ -525,7 +528,7 @@ export function TimelineView() {
         onJump={setScrollY}
       />
 
-      <footer className="fixed bottom-4 left-6 z-30 hidden font-mono text-[10px] text-muted/60 sm:block">
+      <footer className="fixed bottom-4 left-6 z-30 hidden font-mono text-[10px] text-blush-300 sm:block">
         Scroll · pinch or ⌘+scroll to zoom · drag to pan · R to reset
       </footer>
 

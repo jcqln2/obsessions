@@ -91,22 +91,22 @@ export function EntryCard({ entry, y, onDelete, onUpdate, onImageClick }: EntryC
               }}
               disabled={saving}
               placeholder="Untitled era"
-              className="w-full border-b border-ink/40 bg-transparent py-1 font-serif text-lg text-ink outline-none md:text-xl"
+              className="w-full rounded-lg border border-blush-300 bg-blush-50/50 py-1 text-base font-medium text-blush-700 outline-none focus:border-blush-400 md:text-lg"
             />
           ) : (
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="text-left font-serif text-lg font-medium tracking-tight text-ink transition hover:text-ink/70 md:text-xl"
+              className="text-left text-base font-medium text-blush-700 transition hover:text-blush-500 md:text-lg"
             >
               {entry.title ? (
                 entry.title
               ) : (
-                <span className="italic text-muted">Untitled era — click to name</span>
+                <span className="italic text-blush-400">Untitled era — click to name</span>
               )}
             </button>
           )}
-          <div className="mt-2 space-y-0.5 font-mono text-[11px] text-muted">
+          <div className="mt-2 space-y-0.5 font-mono text-[11px] text-blush-400">
             <p>Added {formatEntryTimestamp(entry.created_at)}</p>
             <p>Modified {formatEntryTimestamp(entry.updated_at)}</p>
           </div>
@@ -116,7 +116,7 @@ export function EntryCard({ entry, y, onDelete, onUpdate, onImageClick }: EntryC
           <button
             type="button"
             onClick={() => onDelete(entry.id)}
-            className="shrink-0 font-sans text-xs text-muted transition hover:text-ink"
+            className="shrink-0 font-sans text-xs text-blush-400 transition hover:text-blush-700"
             aria-label="Delete entry"
           >
             Remove
@@ -134,7 +134,7 @@ export function EntryCard({ entry, y, onDelete, onUpdate, onImageClick }: EntryC
       </div>
 
       {entry.notes && (
-        <p className="mt-4 max-w-lg font-sans text-sm leading-relaxed text-ink/80">
+        <p className="mt-4 max-w-lg font-sans text-sm leading-relaxed text-blush-600">
           {entry.notes}
         </p>
       )}

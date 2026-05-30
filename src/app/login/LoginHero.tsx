@@ -1,4 +1,5 @@
-import { Box, Home, LayoutGrid, Shirt, Sparkles } from "lucide-react";
+import { Box, Home, Shirt, Sparkles } from "lucide-react";
+import { StudioLogo } from "@/components/StudioLogo";
 
 const previewTiles = [
   { bg: "bg-blush-100", icon: Home, iconColor: "text-blush-400" },
@@ -10,12 +11,7 @@ const previewTiles = [
 export function LoginHero() {
   return (
     <section className="border-b border-blush-200 bg-blush-100 px-6 py-5">
-      <div className="flex items-center gap-3">
-        <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg bg-blush-400">
-          <LayoutGrid className="h-[18px] w-[18px] text-blush-50" aria-hidden />
-        </div>
-        <h1 className="text-xl font-medium text-blush-700">Miniature Studio</h1>
-      </div>
+      <StudioLogo />
 
       <p className="mt-3 text-[13px] leading-relaxed text-blush-500">
         Your creative archive for dioramas, custom dolls &amp; scale builds. Save

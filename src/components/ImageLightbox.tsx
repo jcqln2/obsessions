@@ -67,7 +67,7 @@ export function ImageLightbox({
         >
           <button
             type="button"
-            className="absolute inset-0 bg-ink/30 backdrop-blur-sm"
+            className="absolute inset-0 bg-blush-700/40 backdrop-blur-sm"
             onClick={onClose}
             aria-label="Close"
           />
@@ -83,17 +83,17 @@ export function ImageLightbox({
             {(entryTitle || entryDate) && (
               <div className="mb-4 text-center">
                 {entryTitle && (
-                  <p className="font-serif text-lg font-medium text-canvas md:text-xl">
+                  <p className="text-lg font-medium text-blush-50 md:text-xl">
                     {entryTitle}
                   </p>
                 )}
                 {entryDate && (
-                  <p className="mt-1 font-mono text-xs text-canvas/70">
+                  <p className="mt-1 font-mono text-xs text-blush-50/70">
                     {formatEntryDate(entryDate)}
                   </p>
                 )}
                 {showNav && imageIndex !== undefined && (
-                  <p className="mt-1 font-mono text-[10px] text-canvas/50">
+                  <p className="mt-1 font-mono text-[10px] text-blush-50/50">
                     {imageIndex + 1} of {imageCount}
                   </p>
                 )}
@@ -105,7 +105,7 @@ export function ImageLightbox({
                 <button
                   type="button"
                   onClick={onPrev}
-                  className="hidden shrink-0 px-2 py-4 font-mono text-2xl text-canvas/80 transition hover:text-canvas md:block"
+                  className="hidden shrink-0 px-2 py-4 font-mono text-2xl text-blush-50/80 transition hover:text-blush-50 md:block"
                   aria-label="Previous image"
                 >
                   ‹
@@ -124,7 +124,7 @@ export function ImageLightbox({
                 <button
                   type="button"
                   onClick={onNext}
-                  className="hidden shrink-0 px-2 py-4 font-mono text-2xl text-canvas/80 transition hover:text-canvas md:block"
+                  className="hidden shrink-0 px-2 py-4 font-mono text-2xl text-blush-50/80 transition hover:text-blush-50 md:block"
                   aria-label="Next image"
                 >
                   ›
@@ -135,7 +135,7 @@ export function ImageLightbox({
             <button
               type="button"
               onClick={onClose}
-              className="mt-6 font-sans text-sm text-canvas/80 underline-offset-4 hover:text-canvas hover:underline"
+              className="mt-6 font-sans text-sm text-blush-50/80 underline-offset-4 hover:text-blush-50 hover:underline"
             >
               Close
             </button>
