@@ -5,13 +5,13 @@
  * even without a captcha token (when Upstash is configured on the target).
  *
  * Run: k6 run tests/k6/waitlist-rate-limit.js
- *
- * Optional — full success path (requires valid token from browser or test keys):
- *   K6_TURNSTILE_TOKEN=... k6 run tests/k6/waitlist-submit.js
  */
 import http from "k6/http";
 import { check, sleep } from "k6";
+import { Counter } from "k6/metrics";
 import { BASE_URL, parseJson, postWaitlist } from "./lib.js";
+
+const rateLimitedCount = new Counter("rate_limited_responses");
 
 export const options = {
   scenarios: {
@@ -23,8 +23,7 @@ export const options = {
     },
   },
   thresholds: {
-    "checks{got_rate_limited}": ["count>=5"],
-    "checks{rate_limit_body}": ["count>=5"],
+    rate_limited_responses: ["count>=5"],
   },
 };
 
@@ -38,40 +37,32 @@ export default function () {
   });
 
   const body = parseJson(res);
-  const rateLimited = res.status === 429;
-  const captchaRejected = res.status === 400 && body?.error?.includes("Captcha");
+  const isRateLimited = res.status === 429;
+
+  if (isRateLimited) {
+    rateLimitedCount.add(1);
+  }
 
   check(res, {
-    got_rate_limited: () => rateLimited,
-    rate_limit_body: () =>
-      rateLimited &&
-      typeof body?.error === "string" &&
-      body.error.toLowerCase().includes("too many"),
-    captcha_or_ok_or_duplicate: () =>
-      rateLimited || captchaRejected || res.status === 200,
+    got_rate_limited_or_captcha: () =>
+      isRateLimited ||
+      (res.status === 400 && body?.error?.includes("Captcha")) ||
+      res.status === 200,
+    rate_limit_error_message: () =>
+      !isRateLimited ||
+      (typeof body?.error === "string" && body.error.toLowerCase().includes("too many")),
   });
-
-  if (res.headers["X-Ratelimit-Remaining"]) {
-    check(res, {
-      rate_limit_headers_present: () => Boolean(res.headers["X-Ratelimit-Remaining"]),
-    });
-  }
 
   sleep(0.1);
 }
 
 export function handleSummary(data) {
-  const checks = data.root_group?.checks || [];
-  let limited = 0;
-  for (const c of checks) {
-    if (c.name === "got_rate_limited" && c.passes) limited = c.passes;
-  }
-  const total = 10;
+  const limited = data.metrics.rate_limited_responses?.values?.count ?? 0;
   const text = [
     "",
     "Waitlist rate-limit load test",
     `  Target:     ${BASE_URL}`,
-    `  Concurrent: ${total} POST /api/waitlist`,
+    `  Concurrent: 10 POST /api/waitlist`,
     `  429 count:  ${limited} (expected >= 5 when Upstash is configured)`,
     "",
     limited >= 5
