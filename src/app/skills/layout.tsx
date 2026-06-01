@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import { SITE_URL } from "@/lib/site";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Skills & AI Manifest",
-  description:
-    "Machine-readable capabilities, waitlist policy, and data schemas for Obsessions — diorama, miniature, and doll collection tracking.",
+  description: `Machine-readable capabilities, waitlist policy, and data schemas for ${SITE_NAME} — diorama, miniature, and doll collection tracking.`,
   openGraph: {
-    title: "Obsessions — AI-Ready Hobby Space",
+    title: `${SITE_NAME} — AI-Ready Hobby Space`,
     description:
       "Structured collection tracker for 1:6 scale miniatures, custom doll inventories, and diorama inspiration.",
     url: `${SITE_URL}/skills`,

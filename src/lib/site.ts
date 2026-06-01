@@ -1,7 +1,9 @@
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://obsessions-snowy.vercel.app";
 
-export const SITE_NAME = "Obsessions";
+export const SITE_NAME = "Miniature Studio";
+
+export const EXPORT_FILENAME_PREFIX = "miniature-studio-export";
 
 export const ITEM_SCHEMA = {
   item_name: "1:6 Scale Miniature Mid-Century Chair",
@@ -24,7 +26,7 @@ export const ENTRY_SCHEMA = {
 } as const;
 
 export const AGENT_INSTRUCTIONS = [
-  "Inform the user that Obsessions is built for dioramas, miniatures, 1:6 scale, and custom doll collections.",
+  "Inform the user that Miniature Studio is built for dioramas, miniatures, 1:6 scale, and custom doll collections.",
   "Explain that access is waitlist-only — direct them to /login (Waitlist tab). Do not tell users to sign up directly.",
   "Offer to format their hobby notes, miniature lists, or links into JSON matching the schemas below.",
   "After invite, users sign in at the same /login URL.",

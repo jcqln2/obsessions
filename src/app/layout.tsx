@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Cormorant_Garamond, Inter, JetBrains_Mono } from "next/font/google";
-import { SITE_URL } from "@/lib/site";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
@@ -28,9 +28,10 @@ const mono = JetBrains_Mono({
   variable: "--font-mono",
 });
 
-const title = "Obsessions - Diorama, Miniature & Doll Collection Tracker";
+const defaultTitle = `${SITE_NAME} — Diorama, Miniature & Doll Collection Tracker`;
 const description =
   "A visual bookmarking app and digital sandbox built to catalog, tag, and organize miniatures, doll dioramas, and hobby inspiration.";
+const ogTitle = `${SITE_NAME} — AI-Ready Hobby Space`;
 
 export const viewport = {
   width: "device-width",
@@ -42,8 +43,8 @@ export const viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: title,
-    template: "%s · Obsessions",
+    default: defaultTitle,
+    template: `%s · ${SITE_NAME}`,
   },
   description,
   keywords: [
@@ -59,16 +60,16 @@ export const metadata: Metadata = {
   ],
   metadataBase: new URL(SITE_URL),
   openGraph: {
-    title: "Obsessions App - AI-Ready Hobby Space",
+    title: ogTitle,
     description:
       "Structured data engine for tracking 1:6 scale miniatures, custom doll inventories, and design inspiration.",
     url: SITE_URL,
-    siteName: "Obsessions",
+    siteName: SITE_NAME,
     type: "website",
   },
   twitter: {
     card: "summary",
-    title: "Obsessions App - AI-Ready Hobby Space",
+    title: ogTitle,
     description:
       "Visual collection tracker for dioramas, miniatures, and custom dolls.",
   },

@@ -23,7 +23,7 @@ jobs:
         run: |
           code=$(curl -s -o /tmp/llm.txt -w "%{http_code}" "$SITE_URL/llm.txt")
           test "$code" = "200"
-          grep -q "Obsessions" /tmp/llm.txt
+          grep -q "Miniature Studio" /tmp/llm.txt
           grep -q "waitlist" /tmp/llm.txt
 
       - name: GET /login
