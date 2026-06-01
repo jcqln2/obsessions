@@ -1,85 +1,129 @@
-# Obsessions
+# Miniature Studio
 
-A personal obsession collage, time-capsule archive. upload photos of what you're into, have imperfect collages made, and scroll through your obsessions over time.
+*(Previously **obsessions**)*
+
+A visual timeline and collage archive for hobbyists tracking dioramas, 1:6 scale miniatures, custom dolls, and related inspiration. Users save images, notes, and links into imperfect auto-layout collages and scroll through aesthetic “eras” over time.
+
+**Production:** [obsessions-snowy.vercel.app](https://obsessions-snowy.vercel.app)  
+**Access:** Invite-only waitlist (no public sign-up). See [AGENTS.md](AGENTS.md) for policy invariants.
+
+---
 
 ## Stack
 
-- **Next.js 15** (App Router)
-- **Supabase** (Postgres, Auth, Storage)
-- **Tailwind CSS** + **Framer Motion**
-- Deploy on **Vercel**
+| Layer | Technology |
+|-------|------------|
+| App | [Next.js 15](https://nextjs.org/) (App Router), React 19, TypeScript |
+| Data & auth | [Supabase](https://supabase.com/) (Postgres, Auth, Storage, RLS) |
+| UI | Tailwind CSS, Framer Motion, Zustand |
+| Deploy | [Vercel](https://vercel.com/) |
+| Security (prod) | Cloudflare Turnstile, Upstash rate limits — [docs/security.md](docs/security.md) |
+| Observability | Sentry — [docs/observability.md](docs/observability.md) |
 
-## start
+---
 
+## Development
 
-### 1. Local env
+### Prerequisites
+
+- Node.js 20+
+- A Supabase project with migrations applied (see `supabase/migrations/`)
+
+### Setup
 
 ```bash
 cp .env.example .env.local
-# Fill in NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
-```
-
-### 2. Run
-
-```bash
+# Required: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
+# Optional locally: NEXT_PUBLIC_SITE_URL, SUPABASE_SERVICE_ROLE_KEY (account deletion)
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and sign in.
+Open [http://localhost:3000](http://localhost:3000). Without env vars you are redirected to `/setup`.
 
-### Waitlist (closed beta)
+### Scripts
 
-1. Run `supabase/migrations/004_waitlist.sql` in the Supabase SQL Editor.
-2. In **Authentication → Providers → Email**, turn **off** “Allow new users to sign up” so only invited accounts can register.
-3. View waitlist emails in **Table Editor → waitlist**. Invite users via **Authentication → Users → Invite user**, then set `status` to `invited`.
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Local dev server |
+| `npm run build` | Production build |
+| `npm run lint` | ESLint |
+| `npm run test:run` | Vitest (unit/component) |
+| `npm run test:k6:waitlist-smoke` | k6 smoke (needs `BASE_URL`) — [docs/k6.md](docs/k6.md) |
 
-Public visitors use **Waitlist** on `/login`; existing users use **Sign in**.
+**PR quality gate:** `npm run lint && npm run test:run && npm run build`
 
-### AI & bot discovery
+---
 
-After deploy, verify these public URLs (no auth):
+## AI & agent discovery
 
-- `https://obsessions-snowy.vercel.app/llm.txt`
-- `https://obsessions-snowy.vercel.app/.well-known/ai-plugin.json`
-- `https://obsessions-snowy.vercel.app/skills`
+The app exposes machine-readable manifests for external assistants and automated agents:
 
-Set `NEXT_PUBLIC_SITE_URL` in Vercel env for correct canonical links.
+| URL | Purpose |
+|-----|---------|
+| `/llm.txt` | Plain-text capabilities, waitlist policy, JSON schemas |
+| `/.well-known/ai-plugin.json` | AI plugin manifest |
+| `/skills` | Human-readable mirror of the above |
+
+Canonical URLs use `NEXT_PUBLIC_SITE_URL` in production. Source of truth for copy: [`src/lib/site.ts`](src/lib/site.ts), kept in sync with `public/llm.txt` per [AGENTS.md](AGENTS.md).
+
+---
 
 ## Agentic engineering
 
-This repo is set up for **Cursor agents + GitHub Actions** (hybrid, full-auto deploy on green CI).
+This repository is built for **Cursor agents + GitHub Actions**: implement on `cursor/*` branches, CI gates changes, Vercel deploys `main`.
 
-| Doc | Purpose |
-|-----|---------|
-| [AGENTS.md](AGENTS.md) | Internal agent contract, invariants, forbidden paths |
-| [docs/github-setup.md](docs/github-setup.md) | Branch protection & auto-merge (one-time) |
+```mermaid
+flowchart LR
+  agent[Cursor agent PR] --> ci[CI lint test build]
+  ci --> vercel[Vercel production]
+  ci --> verify[deploy-verify smoke]
+```
+
+| Mechanism | Behavior |
+|-----------|----------|
+| **CI** | Lint, test, build, secret scan on every PR and `main` |
+| **Auto-merge** | PRs labeled `agent-pr` or branch `cursor/*` squash-merge when CI passes ([workflow](.github/workflows/auto-merge.yml)) |
+| **Deploy verify** | After `main` deploy: smoke `llm.txt`, `/login`, `/skills`, waitlist API |
+| **Agent contract** | [AGENTS.md](AGENTS.md) — invariants, forbidden paths, public routes |
+| **k6** | Manual workflow for waitlist rate-limit checks — [docs/k6.md](docs/k6.md) |
+
+Forbidden auto-merge paths (migrations, middleware, auth routes, fonts) require human review — see AGENTS.md.
+
+---
+
+## Documentation
+
+| Doc | Audience |
+|-----|----------|
+| [AGENTS.md](AGENTS.md) | Agents & contributors — invariants, branches, forbidden paths |
+| [docs/security.md](docs/security.md) | Turnstile, Upstash, headers, account export/delete |
+| [docs/observability.md](docs/observability.md) | Monitoring tiers |
 | [docs/runbooks/incident.md](docs/runbooks/incident.md) | Rollback & incidents |
-| [docs/observability.md](docs/observability.md) | Cheap vs medium monitoring |
-| [docs/security.md](docs/security.md) | Turnstile, Upstash, GA hardening |
-| [docs/k6.md](docs/k6.md) | k6 waitlist smoke & rate-limit tests |
-**Agentic CI enabled**
+| [docs/k6.md](docs/k6.md) | Load/smoke testing |
+| [docs/github-setup.md](docs/github-setup.md) | Branch protection & auto-merge setup |
 
-**CI:** lint → test → build → secret scan on every PR and `main`.
-
-**Auto-merge:** PRs labeled `agent-pr` or branch `cursor/*` squash-merge when CI passes (see [auto-merge.yml](.github/workflows/auto-merge.yml)).
-
-**Deploy verify:** Smoke tests `/llm.txt`, `/login`, `/skills`, waitlist API after each `main` deploy.
-
-**k6-rate-limit-test:** Manual workflow — login/Turnstile smoke + 10-concurrent rate-limit test ([docs/k6.md](docs/k6.md)).
-
-**Budget:** ~$0–25/mo (Vercel/Supabase free + Cursor Pro). Medium tier ~$60–130/mo — see [docs/observability.md](docs/observability.md).
+---
 
 ## Project structure
 
 ```
 src/
-  app/           # Pages & API routes
-  components/    # Timeline, collage, create entry UI
-  lib/           # Collage algorithm, Supabase, uploads
-  store/         # Zoom/scroll state (Zustand)
-supabase/        # SQL migrations & storage policies
-.github/         # CI, auto-merge, Dependabot, hygiene
+  app/           # App Router pages & API routes (/api/entries, /api/waitlist, /api/account/*)
+  components/    # Timeline, collage, capture modals, account settings
+  lib/           # Collage layout, Supabase clients, security, site constants
+  store/         # Timeline zoom/pan (Zustand)
+public/
+  llm.txt        # External AI instructions
+  .well-known/   # ai-plugin.json
+supabase/        # SQL migrations (applied manually in Supabase dashboard)
+.github/         # CI, auto-merge, deploy-verify, Dependabot
 .cursor/         # Cursor rules & deploy skill
-docs/            # Runbooks & GitHub setup
+docs/            # Runbooks & operational guides
 ```
+
+---
+
+## License
+
+Private repository. All rights reserved unless otherwise noted.
