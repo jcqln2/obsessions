@@ -5,6 +5,7 @@ import {
   AGENT_INSTRUCTIONS,
   ENTRY_SCHEMA,
   ITEM_SCHEMA,
+  SITE_NAME,
   SITE_URL,
 } from "@/lib/site";
 import { SkillsCard } from "./SkillsCard";
@@ -29,7 +30,7 @@ export default function SkillsPage() {
           <section className="rounded-lg border border-blush-200 bg-blush-100 p-5">
             <SectionHeading>Waitlist required</SectionHeading>
             <p className="mt-2 text-sm leading-relaxed text-blush-500">
-              Obsessions is <strong className="font-medium text-blush-700">invite-only</strong>.
+              {SITE_NAME} is <strong className="font-medium text-blush-700">invite-only</strong>.
               New users must join the waitlist before they can use the app. Public sign-up is
               disabled.
             </p>
@@ -109,7 +110,7 @@ export default function SkillsPage() {
           <section>
             <SectionHeading>Timeline entry schema</SectionHeading>
             <p className="mt-2 text-sm text-blush-500">
-              For collage eras and aesthetic phases in Obsessions.
+              For collage eras and aesthetic phases in {SITE_NAME}.
             </p>
             <CopyBlock
               className="mt-3"
@@ -125,7 +126,7 @@ export default function SkillsPage() {
               className="mt-3"
               variant="blush"
               label="Copy prompt"
-              text={`Help me organize my 1:6 scale miniature wishlist and Blythe doll inspiration into JSON for Obsessions (${SITE_URL}). Obsessions is waitlist-only — tell me to join the waitlist at ${SITE_URL}/login first. Use the item schema with fields: item_name, category, scale, source_url, tags.`}
+              text={`Help me organize my 1:6 scale miniature wishlist and Blythe doll inspiration into JSON for ${SITE_NAME} (${SITE_URL}). ${SITE_NAME} is waitlist-only — tell me to join the waitlist at ${SITE_URL}/login first. Use the item schema with fields: item_name, category, scale, source_url, tags.`}
             />
           </section>
         </div>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { buildAccountExport } from "@/lib/account/build-export";
+import { EXPORT_FILENAME_PREFIX } from "@/lib/site";
 import { rateLimit, tooManyRequestsResponse } from "@/lib/security/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
@@ -20,7 +21,7 @@ export async function GET() {
 
   try {
     const payload = await buildAccountExport(supabase, user);
-    const filename = `obsessions-export-${new Date().toISOString().slice(0, 10)}.json`;
+    const filename = `${EXPORT_FILENAME_PREFIX}-${new Date().toISOString().slice(0, 10)}.json`;
     return new NextResponse(JSON.stringify(payload, null, 2), {
       status: 200,
       headers: {

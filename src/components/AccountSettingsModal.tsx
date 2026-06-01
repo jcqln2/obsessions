@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { DELETE_CONFIRM_PHRASE } from "@/lib/account/delete-account";
+import { EXPORT_FILENAME_PREFIX } from "@/lib/site";
 
 interface AccountSettingsModalProps {
   open: boolean;
@@ -34,7 +35,8 @@ export function AccountSettingsModal({ open, onClose }: AccountSettingsModalProp
       const blob = await res.blob();
       const disposition = res.headers.get("Content-Disposition");
       const match = disposition?.match(/filename="([^"]+)"/);
-      const filename = match?.[1] ?? `obsessions-export-${new Date().toISOString().slice(0, 10)}.json`;
+      const filename =
+        match?.[1] ?? `${EXPORT_FILENAME_PREFIX}-${new Date().toISOString().slice(0, 10)}.json`;
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;

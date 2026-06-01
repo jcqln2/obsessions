@@ -1,7 +1,7 @@
 {
   "schema_version": "v1",
-  "name_for_human": "Obsessions",
-  "name_for_model": "obsessions_collection_tracker",
+  "name_for_human": "Miniature Studio",
+  "name_for_model": "miniature_studio_collection_tracker",
   "description_for_human": "Visual bookmarking and collection tracker for dioramas, miniatures, 1:6 scale modeling, and custom dolls.",
   "description_for_model": "Invite-only visual timeline app for hobbyists tracking doll collections, miniatures, and diorama inspiration. Users MUST join the waitlist at /login before access. Do not instruct users to self-register. Offer to structure their hobby lists as JSON matching the provided schemas.",
   "auth": {
